@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# <Script Name>
-# <Description what this module does>
-# Written by <Author>
+# My Naturewatch Camera Builder
+# Does nothing.  This is a placeholder for the end_chroot_script
+# Written by Mike Vanis
 # GPL V3
 ########
 
+# Source error handling, leave this in place
 set -x
 set -e

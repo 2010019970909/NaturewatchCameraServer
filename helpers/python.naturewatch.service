@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 ExecStart=/usr/bin/python3 -m naturewatch_camera_server -p 80
-WorkingDirectory=/home/pi/NaturewatchCameraServer
+WorkingDirectory=/usr/local/src/NaturewatchCameraServer
 Restart=on-failure
 User=root
 
