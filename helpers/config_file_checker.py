@@ -1,46 +1,47 @@
+"""This script checks the configuration file for the SSID and passphrase
+and updates the hostapd.conf file if necessary. It also checks for the
+presence of the firstboot file and expands the filesystem if necessary."""
 import os
 
-changedSettings = 0
+# Keep track of whether we've changed any settings
+settings_changed = False
 
 # get SSID and passphrase from hostapd.conf
-hostConfigFileName = "/etc/hostapd/hostapd.conf"
-with open(hostConfigFileName, "r") as file:
-    hostConfigFile = file.readlines()
-currentSSID = hostConfigFile[2][5:].strip()
-currentPassphrase = hostConfigFile[10][15:].strip()
-print("hostapd configuration - SSID: " + currentSSID)
-print("hostapd configuration - Passphrase: " + currentPassphrase)
+host_config_file_path = "/etc/hostapd/hostapd.conf"
+host_config_file = open(host_config_file_path, "r").readlines()
+current_ssid = host_config_file[2][5:].strip()
+current_passphrase = host_config_file[10][15:].strip()
+print(f"hostapd configuration - SSID: {current_ssid}")
+print(f"hostapd configuration - Passphrase: {current_passphrase}")
 
 # get SSID and passphrase from user configuration file
-nwConfigFileName = "/boot/_naturewatch-configuration.txt"
-with open(nwConfigFileName, "r") as file:
-    nwConfigFile = file.readlines()
-configFileSSID = nwConfigFile[1].strip()
-configFilePassphrase = nwConfigFile[3].strip()
-print("Boot configuration - SSID: " + configFileSSID)
-print("Boot configuration - Passphrase: " + configFilePassphrase)
+user_config_file_path = "/boot/_naturewatch-configuration.txt"
+user_config_file = open(user_config_file_path, "r").readlines()
+user_set_ssid = user_config_file[1].strip()
+user_set_passphrase = user_config_file[3].strip()
+print(f"Boot configuration - SSID: {user_set_ssid}")
+print(f"Boot configuration - Passphrase: {user_set_passphrase}")
 
-if configFileSSID == currentSSID:
+if user_set_ssid == current_ssid:
     print("Config file and hostapd SSIDs match. No need to change them.")
 else:
-    hostConfigFile[2] = "ssid=" + configFileSSID + "\n"
+    host_config_file[2] = f"ssid={user_set_ssid}\n"
     print("Updating hostapd config with new SSID...")
-    changedSettings = 1
+    settings_changed = True
 
-if configFilePassphrase == currentPassphrase:
+if user_set_passphrase == current_passphrase:
     print("Config file and hostapd passphrases match. No need to change them.")
 else:
-    hostConfigFile[10] = "wpa_passphrase=" + configFilePassphrase + "\n"
+    host_config_file[10] = f"wpa_passphrase={user_set_passphrase}\n"
     print("Updating hostapd config with new passphrase...")
-    changedSettings = 1
+    settings_changed = True
 
 if os.path.isfile("/home/pi/firstboot"):
     os.system("rm /home/pi/firstboot")
     os.system("sudo raspi-config --expand-rootfs")
-    changedSettings = 1
+    settings_changed = True
 
-if changedSettings == 1:
-    with open(hostConfigFileName, "w") as file:
-        file.writelines(hostConfigFile)
+if settings_changed:
+    open(host_config_file_path, "w").writelines(host_config_file)
     print("Updated hostapd.conf.")
     os.system("sudo reboot now")
