@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Modal, Button} from 'react-bootstrap';
+import { Modal, Button } from 'react-bootstrap';
 import LazyLoad from 'react-lazyload';
-import {CheckCircle, Cancel} from '@material-ui/icons'
+import { CheckCircle, Cancel } from '@mui/icons-material'
 
 class GalleryGrid extends React.Component {
     constructor(props) {
@@ -42,7 +42,7 @@ class GalleryGrid extends React.Component {
             <div key={item.thumbnail} className="gallery-thumbnail">
                 {this.renderSelectIcon(item)}
                 <LazyLoad>
-                    <img alt="Captured by Naturewatch Camera" src={item.thumbnail} onClick={this.handleThumbnailClick.bind(this, item)}/>
+                    <img alt="Captured by Naturewatch Camera" src={item.thumbnail} onClick={this.handleThumbnailClick.bind(this, item)} />
                 </LazyLoad>
             </div>
         );
@@ -53,7 +53,7 @@ class GalleryGrid extends React.Component {
         if (this.props.isSelectActive) {
             if (item.selected) {
                 return (
-                    <CheckCircle/>
+                    <CheckCircle />
                 );
             } else {
                 return null;
@@ -78,19 +78,19 @@ class GalleryGrid extends React.Component {
                     {this.state.activeContent.endsWith(".jpg") &&
                         <div className="footer-content">
                             <p className="mr-auto">
-                                <a href={this.state.activeContent} download={this.state.activeContent.substring(this.state.activeContent.lastIndexOf('/')+1)}>Download Photo</a>
+                                <a href={this.state.activeContent} download={this.state.activeContent.substring(this.state.activeContent.lastIndexOf('/') + 1)}>Download Photo</a>
                             </p>
                         </div>
                     }
                     {this.state.activeContent.endsWith(".mp4") &&
                         <div className="footer-content">
                             <p className="mr-auto">
-                               <a href={this.state.activeContent} download={this.state.activeContent.substring(this.state.activeContent.lastIndexOf('/')+1)}>Download Video</a>
+                                <a href={this.state.activeContent} download={this.state.activeContent.substring(this.state.activeContent.lastIndexOf('/') + 1)}>Download Video</a>
                             </p>
                         </div>
                     }
                     <Button variant="primary" className="btn-icon" onClick={this.handleModalExit}>
-                        <Cancel/>
+                        <Cancel />
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -101,13 +101,13 @@ class GalleryGrid extends React.Component {
         if (this.state.activeContent.endsWith(".mp4")) {
             return (
                 <video controls>
-                    <source src={this.state.activeContent} type="video/mp4"/>
+                    <source src={this.state.activeContent} type="video/mp4" />
                     Your browser does not support the video tag.
                 </video>
             );
         } else {
             return (
-                <img alt="" src={this.state.activeContent}/>
+                <img alt="" src={this.state.activeContent} />
             );
         }
     }
