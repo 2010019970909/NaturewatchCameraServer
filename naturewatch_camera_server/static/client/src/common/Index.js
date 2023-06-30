@@ -1,14 +1,12 @@
 import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { useRef } from "react";
-import { useIdleTimer } from "react-idle-timer";
+import { IdleTimer } from './IdleTimer';
 import axios from 'axios';
 import Header from './Header'
 import CameraFeed from './CameraFeed'
 import Settings from '../settings/Settings';
 import SessionButton from './SessionButton';
-import { element } from 'prop-types';
 
 class Index extends React.Component {
     constructor(props) {
@@ -172,19 +170,8 @@ class Index extends React.Component {
     }
 
     render() {
-        const idleTimeRef = useRef(null);
-
-        const idleTimer = useIdleTimer({
-            crossTab: true,
-            ref: idleTimeRef,
-            timeout: 60 * 1000,
-            onIdle: this.onIdle,
-            debounce: 250,
-            element: document,
-        });
-
         return (
-            <div idleTimer={idleTimer} className="index">
+            <div className="index">
                 <Container>
                     <Row>
                         <Col>
@@ -227,6 +214,14 @@ class Index extends React.Component {
                         </Col>
                     </Row>
                 </Container>
+                <IdleTimer
+                    ref={ref => { this.idleTimer = ref }}
+                    element={document}
+                    onIdle={this.onIdle}
+                    debounce={250}
+                    timeout={1000 * 60}
+                    crossTab={true}
+                />
             </div>
         );
     }
