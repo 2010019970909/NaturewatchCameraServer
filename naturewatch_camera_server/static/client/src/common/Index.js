@@ -1,12 +1,14 @@
 import React from 'react';
-import {Container, Row, Col} from 'react-bootstrap';
+import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import IdleTimer from 'react-idle-timer';
+import { useRef } from "react";
+import { useIdleTimer } from "react-idle-timer";
 import axios from 'axios';
 import Header from './Header'
 import CameraFeed from './CameraFeed'
 import Settings from '../settings/Settings';
 import SessionButton from './SessionButton';
+import { element } from 'prop-types';
 
 class Index extends React.Component {
     constructor(props) {
@@ -37,7 +39,7 @@ class Index extends React.Component {
         axios.get('/api/session')
             .then((res) => {
                 const status = res.data;
-                this.setState({sessionStatus: status});
+                this.setState({ sessionStatus: status });
                 console.log("INFO: status received.");
                 console.log(this.state.sessionStatus);
             });
@@ -81,10 +83,10 @@ class Index extends React.Component {
     formatTime(d) {
         let year = d.getFullYear().toString();
         let month = "";
-        if (d.getMonth()+1 < 10) {
-            month = "0" + (d.getMonth()+1).toString();
+        if (d.getMonth() + 1 < 10) {
+            month = "0" + (d.getMonth() + 1).toString();
         } else {
-            month += (d.getMonth()+1).toString();
+            month += (d.getMonth() + 1).toString();
         }
         let date = "";
         if (d.getDate() < 10) {
@@ -155,27 +157,38 @@ class Index extends React.Component {
     }
 
     onSettingsOpen() {
-        this.setState({isSettingsOpen: true});
+        this.setState({ isSettingsOpen: true });
     }
 
     onSettingsClose() {
-        this.setState({isSettingsOpen: false});
+        this.setState({ isSettingsOpen: false });
     }
 
     onTimelapseActiveChange(value) {
-        this.setState({isTimelapseActive: value === "on" ? true : false},
+        this.setState({ isTimelapseActive: value === "on" ? true : false },
             () => {
                 console.log("Timelapse: " + this.state.isTimelapseActive);
             });
     }
 
     render() {
-        return(
-            <div className="index">
+        const idleTimeRef = useRef(null);
+
+        const idleTimer = useIdleTimer({
+            crossTab: true,
+            ref: idleTimeRef,
+            timeout: 60 * 1000,
+            onIdle: this.onIdle,
+            debounce: 250,
+            element: document,
+        });
+
+        return (
+            <div idleTimer={idleTimer} className="index">
                 <Container>
                     <Row>
                         <Col>
-                            <Header/>
+                            <Header />
                         </Col>
                     </Row>
                     <Row>
@@ -214,13 +227,6 @@ class Index extends React.Component {
                         </Col>
                     </Row>
                 </Container>
-                <IdleTimer
-                    ref={ref => { this.idleTimer = ref }}
-                    element={document}
-                    onIdle={this.onIdle}
-		            debounce={250}
-                    timeout={1000 * 60}
-                />
             </div>
         );
     }
