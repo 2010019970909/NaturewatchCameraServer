@@ -21,10 +21,10 @@ echo "Installation path: $INSTALLATION_PATH"
 # Get install.sh parent directory
 SOURCE="${BASH_SOURCE:-0}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
-  SOURCE="$(readlink "$SOURCE")"
-  # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
@@ -32,16 +32,10 @@ apt-get clean
 apt-get update
 apt-get upgrade -y
 apt-get dist-upgrade -y
-# # For some reason I couldn't install libgtk2.0-dev or libgtk-3-dev without running the
-# # following line
-# # See https://www.raspberrypi.org/forums/viewtopic.php?p=1254646#p1254665 for issue and resolution
-# apt-get install -y devscripts debhelper cmake libldap2-dev libgtkmm-3.0-dev libarchive-dev libcurl4-openssl-dev intltool
-# apt-get install -y build-essential cmake pkg-config libjpeg-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libgtk2.0-dev libgtk-3-dev libatlas-base-dev libblas-dev libeigen{2,3}-dev liblapack-dev gfortran
-# apt-get install -y libilmbase25 libopenexr-dev libgstreamer1.0-dev
-# apt-get install -y gpac
+
 apt-get install -y python3 python3-pip python3-dev python3-setuptools python3-wheel python3-requests
 apt-get install -y python3-picamera2 --no-install-recommends
-apt-get install -y ffmpeg
+apt-get install -y git ffmpeg
 
 echo "Installing OpenCV"
 # Note: python is now python3 in current distro releases
