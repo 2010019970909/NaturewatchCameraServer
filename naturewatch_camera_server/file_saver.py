@@ -1,13 +1,13 @@
-from threading import Thread
-import cv2
-import io
+import datetime
 import logging
 import os
-import datetime
-import psutil
 import zipfile
-
 from subprocess import call
+from threading import Thread
+
+import cv2
+import psutil
+
 
 class FileSaver(Thread):
 
@@ -23,7 +23,7 @@ class FileSaver(Thread):
         # Scaledown factor for thumbnail images
         self.thumbnail_factor = self.config["tn_width"] / self.config["img_width"]
 
-    def checkStorage(self):
+    def check_storage(self):
         # Disk information
         percent = psutil.disk_usage('/').percent
         self.logger.debug(f'FileSaver: {percent} % of storage space used.')
@@ -36,7 +36,7 @@ class FileSaver(Thread):
         :param timestamp: formatted timestamp string
         :return: filename
         """
-        if self.checkStorage() < 99:
+        if self.check_storage() < 99:
             filename = f'{timestamp}.jpg'
             self.logger.debug('FileSaver: saving file')
 
@@ -60,12 +60,15 @@ class FileSaver(Thread):
         try:
             if media_type in ["photo", "timelapse"]:
             # TODO: Build a proper downscaling routine for the thumbnails
-            # self.logger.debug('Scaling by a factor of {}'.format(self.thumbnail_factor))
-            # thumb = cv2.resize(image, 0, fx=self.thumbnail_factor, fy=self.thumbnail_factor, interpolation=cv2.INTER_AREA)
+            # self.logger.debug(
+            #     'Scaling by a factor of {}'.format(self.thumbnail_factor))
+            # thumb = cv2.resize(
+            #     image, 0, fx=self.thumbnail_factor,
+            #     fy=self.thumbnail_factor, interpolation=cv2.INTER_AREA)
                 path = os.path.join(self.config["photos_path"], filename)
             else:
                 path = os.path.join(self.config["videos_path"], filename)
-            
+
             cv2.imwrite(path, image)
             self.logger.info("FileSaver: saved thumbnail to {path}")
             return filename
@@ -81,15 +84,22 @@ class FileSaver(Thread):
         :param timestamp: formatted timestamp string
         :return: none
         """
-        if self.checkStorage() < 99:
+        if self.check_storage() < 99:
             filename = f"{timestamp}.h264"
             filename_mp4 = f"{timestamp}.mp4"
             input_video = os.path.join(self.config["videos_path"], filename)
             output_video = os.path.join(self.config["videos_path"], filename_mp4)
 
-            self.logger.info('FileSaver: Writing video...') 
+            self.logger.info('FileSaver: Writing video...')
             stream.copy_to(input_video, seconds=15)
-            call(["MP4Box", "-fps", str(self.config["frame_rate"]), "-add", input_video, output_video])
+            call([
+                "MP4Box",
+                "-fps",
+                str(self.config["frame_rate"]),
+                "-add",
+                input_video,
+                output_video,
+            ])
             self.logger.info(f'FileSaver: done writing video "{filename}"')
 
             os.remove(input_video)
@@ -109,13 +119,13 @@ class FileSaver(Thread):
     def download_zip(self, filename):
         input_file = os.path.join(self.config["videos_path"], filename)
         output_zip = f"{input_file}.zip"
-        zf = zipfile.ZipFile(output_zip, mode='w')
+        zip_file = zipfile.ZipFile(output_zip, mode='w')
 
         try:
             self.logger.info('FileSaver: adding file')
-            zf.write(input_file, os.path.basename(input_file))
+            zip_file.write(input_file, os.path.basename(input_file))
         finally:
             self.logger.info('FileSaver: closing')
-            zf.close()
+            zip_file.close()
 
         return output_zip

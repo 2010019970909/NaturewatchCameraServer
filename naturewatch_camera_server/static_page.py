@@ -1,6 +1,8 @@
-from flask import (Blueprint, Response, send_from_directory,
-                   current_app, render_template)
 import os
+
+from flask import (Blueprint, Response, current_app, render_template,
+                   send_from_directory)
+
 from .api import get_version
 
 static_page = Blueprint('static_page', __name__)

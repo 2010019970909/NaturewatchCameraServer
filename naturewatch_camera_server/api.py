@@ -1,7 +1,8 @@
 # TODO: create "getSpace" api call when filesaver is global
-from flask import Blueprint, Response, request, json, current_app, redirect
-import time
 import subprocess
+import time
+
+from flask import Blueprint, Response, current_app, json, redirect, request
 
 api = Blueprint('api', __name__)
 
@@ -26,6 +27,7 @@ def generate_mjpg(camera_controller):
     while camera_controller.is_alive() is False:
         camera_controller.start()
         time.sleep(1)
+
     while camera_controller.is_alive():
         latest_frame = camera_controller.get_image_binary()
         response = b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + \
@@ -54,10 +56,10 @@ def generate_jpg(camera_controller):
         response = b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + \
             bytearray(latest_frame) + b'\r\n'
         return response
-    except Exception as e:
+    except Exception as error:
         # TODO send a error.jpg image as the frame instead.
         current_app.logger.warning("Could not retrieve image binary.")
-        current_app.logger.exception(e)
+        current_app.logger.exception(error)
         return b'Empty'
 
     time.sleep(0.1)
@@ -132,7 +134,7 @@ def construct_settings_object(camera_controller, change_detector):
 
     elif change_detector.minWidth == min_width:
         sensitivity = "default"
-    
+
     elif change_detector.minWidth == more_sensitivity:
         sensitivity = "more"
 
@@ -218,7 +220,6 @@ def update_time(time_string):
     return Response(
         '{"ERROR": "' + time_string + '"}',
         status=400, mimetype='application/json')
-        
 
 
 @api.route('/version')
@@ -253,7 +254,7 @@ def git(*parameters: str):
     command = ['git']
     command.extend(parameters)
 
-    git_result = subprocess.run(command, stdout=subprocess.PIPE)
+    git_result = subprocess.run(command, stdout=subprocess.PIPE, check=False)
     return git_result.stdout.decode('utf-8').replace('\n', '')
 
 
@@ -282,5 +283,5 @@ def maintenance(*parameters: str):
     command = ['sudo']
     command.extend(parameters)
 
-    git_result = subprocess.run(command, stdout=subprocess.PIPE)
+    git_result = subprocess.run(command, stdout=subprocess.PIPE, check=False)
     return git_result.stdout.decode('utf-8').replace('\n', '')

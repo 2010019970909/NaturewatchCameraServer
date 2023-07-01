@@ -1,9 +1,9 @@
-from flask import Blueprint, Response, request, json, send_from_directory
-from flask import current_app
-import json
 import os
 
-from .ZipfileGenerator import ZipfileGenerator
+from flask import (Blueprint, Response, current_app, json, request,
+                   send_from_directory)
+
+from .zipfile_generator import ZipfileGenerator
 
 data = Blueprint('data', __name__)
 
@@ -113,7 +113,7 @@ def generate_files_list(path, paths_list):
         lambda fn: {'filename': os.path.join(path, fn), 'arcname': fn},
         paths_list,
     ))
-     
+
 
 def get_all_files(app, src_path):
     # just for now... we should take an array of file names

@@ -1,11 +1,13 @@
-import cv2
-import numpy as np
-from threading import Thread
-from datetime import datetime
-import time
-import imutils
 import logging
-from naturewatch_camera_server.FileSaver import FileSaver
+import time
+from datetime import datetime
+from threading import Thread
+
+import cv2
+import imutils
+import numpy as np
+
+from naturewatch_camera_server.file_saver import FileSaver
 
 
 class ChangeDetector(Thread):
@@ -19,13 +21,15 @@ class ChangeDetector(Thread):
         self.camera_controller = camera_controller
 
         self.logger = logger
+        if self.logger is None:
+            self.logger = logging
 
         self.file_saver = FileSaver(self.config, logger=self.logger)
 
-        self.minWidth = self.config["min_width"]
-        self.maxWidth = self.config["max_width"]
-        self.minHeight = self.config["min_height"]
-        self.maxHeight = self.config["max_height"]
+        self.min_width = self.config["min_width"]
+        self.max_width = self.config["max_width"]
+        self.min_height = self.config["min_height"]
+        self.max_height = self.config["max_height"]
 
         self.device_time = None
         self.device_time_start = None
@@ -33,16 +37,16 @@ class ChangeDetector(Thread):
         self.mode = "inactive"
         self.session_start_time = None
         self.avg = None
-        self.lastPhotoTime = self.get_fake_time()
-        self.numOfPhotos = 0
+        self.last_photo_time = self.get_fake_time()
+        self.number_of_photos = 0
 
-        self.activeColour = (255, 255, 0)
-        self.inactiveColour = (100, 100, 100)
-        self.isMinActive = False
-        self.currentImage = None
+        self.active_colour = (255, 255, 0)
+        self.inactive_colour = (100, 100, 100)
+        self.is_min_active = False
+        self.current_image = None
 
         self.timelapse_active = False
-        self.timelapse        = self.config["default_timelapse"]
+        self.timelapse = self.config["default_timelapse"]
 
         self.logger.info("ChangeDetector: initialised")
 
@@ -65,21 +69,21 @@ class ChangeDetector(Thread):
         self.cancelled = True
         self.camera_controller.stop()
 
-    @staticmethod
-    def save_photo(image):
-        """
-        Save numpy image to a jpg file
-        :param image: numpy array image
-        :return: none
-        """
-        timestamp = datetime.datetime.now()
-        filename = f"{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}.jpg"
+    # @staticmethod
+    # def save_photo(image):
+    #     """
+    #     Save numpy image to a jpg file
+    #     :param image: numpy array image
+    #     :return: none
+    #     """
+    #     timestamp = datetime.datetime.now()
+    #     filename = f"{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}.jpg"
 
-        try:
-            cv2.imwrite(f"photos/{filename}", image)
-        except Exception as error:
-            self.logger.error('ChangeDetector: save_photo() error: ')
-            self.logger.exception(error)
+    #     try:
+    #         cv2.imwrite(f"photos/{filename}", image)
+    #     except Exception as error:
+    #         self.logger.error('ChangeDetector: save_photo() error: ')
+    #         self.logger.exception(error)
 
     def detect_change_contours(self, img):
         """
@@ -112,14 +116,14 @@ class ChangeDetector(Thread):
         if largest_contour is None:
             return False
 
-        (x, y, w, h) = cv2.boundingRect(largest_contour)
+        _, _, width, height = cv2.boundingRect(largest_contour)
 
         # if the contour is too small or too big, return false
-        if (w < self.minWidth or h < self.minHeight or
-            w > self.maxWidth or h > self.maxHeight):
+        if (width < self.min_width or height < self.min_height or
+                width > self.max_width or height > self.max_height):
             return False
 
-        time_interval = self.get_fake_time() - self.lastPhotoTime
+        time_interval = self.get_fake_time() - self.last_photo_time
         if time_interval >= self.config['min_photo_interval_s']:
             return True
 
@@ -139,10 +143,10 @@ class ChangeDetector(Thread):
             return contours[np.argmax(areas)]
 
     def set_sensitivity(self, min_width, max_width):
-        self.maxHeight = max_width
-        self.minHeight = min_width
-        self.maxWidth = max_width
-        self.minWidth = min_width
+        self.max_height = max_width
+        self.min_height = min_width
+        self.max_width = max_width
+        self.min_width = min_width
 
     def start_photo_session(self):
         self.logger.info('ChangeDetector: starting photo capture')
@@ -159,8 +163,7 @@ class ChangeDetector(Thread):
         self.logger.info('ChangeDetector: starting timelapse capture')
         self.mode = "timelapse"
         self.session_start_time = self.get_fake_time()
-        
-        
+
     def stop_session(self):
         self.logger.info('ChangeDetector: ending capture')
         if self.mode == "video":
@@ -182,7 +185,7 @@ class ChangeDetector(Thread):
         if self.mode in ["photo", "video"]:
             # get an md image
             img = self.camera_controller.get_md_image()
-            
+
             # only proceed if there is an image
             if img is not None:
                 if self.detect_change_contours(img) is True:
@@ -194,11 +197,12 @@ class ChangeDetector(Thread):
                         image = self.camera_controller.get_hires_image()
                         self.file_saver.save_image(image, timestamp)
                         self.file_saver.save_thumb(
-                            imutils.resize(image, width=self.config["md_width"]),
+                            imutils.resize(
+                                image, width=self.config["md_width"]),
                             timestamp,
                             self.mode,
                         )
-                        self.lastPhotoTime = self.get_fake_time()
+                        self.last_photo_time = self.get_fake_time()
                         self.logger.info(
                             "ChangeDetector: photo capture completed")
 
@@ -215,7 +219,7 @@ class ChangeDetector(Thread):
                                 timestamp,
                             )
 
-                        self.lastPhotoTime = self.get_fake_time()
+                        self.last_photo_time = self.get_fake_time()
                         self.logger.debug("ChangeDetector: video timer reset")
                     else:
                         # TODO: Add debug code that logs a line
@@ -231,7 +235,7 @@ class ChangeDetector(Thread):
         # TODO: implement periodic pictures
         elif self.mode == "timelapse":
             # take one picture every minute
-            if self.get_fake_time() - self.lastPhotoTime >= self.timelapse:
+            if self.get_fake_time() - self.last_photo_time >= self.timelapse:
                 self.logger.info(
                     f"ChangeDetector: {self.timelapse} s elapsed -> "
                     "capturing...")
@@ -244,7 +248,7 @@ class ChangeDetector(Thread):
                     timestamp,
                     self.mode,
                 )
-                self.lastPhotoTime = self.get_fake_time()
+                self.last_photo_time = self.get_fake_time()
                 self.logger.info("ChangeDetector: photo capture completed")
 
     def get_fake_time(self):

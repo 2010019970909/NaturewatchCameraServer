@@ -1,7 +1,9 @@
-from naturewatch_camera_server import create_app, create_error_app
-from picamera.exc import PiCameraError
 import argparse
 import subprocess
+
+from picamera.exc import PiCameraError
+
+from naturewatch_camera_server import create_app, create_error_app
 
 parser = argparse.ArgumentParser(
     description='Launch My Naturewatch Camera'

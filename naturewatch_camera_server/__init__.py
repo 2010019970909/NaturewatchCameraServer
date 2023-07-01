@@ -1,16 +1,18 @@
 #!../venv/bin/python
+"""Initialise the naturewatch camera server."""
 import json
 import logging
 import os
-import sys
-from shutil import copyfile
 from logging.handlers import RotatingFileHandler
-from naturewatch_camera_server.CameraController import CameraController
-from naturewatch_camera_server.ChangeDetector import ChangeDetector
-from naturewatch_camera_server.FileSaver import FileSaver
+from shutil import copyfile
+
 from flask import Flask
+
 from naturewatch_camera_server.api import api
+from naturewatch_camera_server.camera_controller import CameraController
+from naturewatch_camera_server.change_detector import ChangeDetector
 from naturewatch_camera_server.data import data
+from naturewatch_camera_server.file_saver import FileSaver
 from naturewatch_camera_server.static_page import static_page
 
 
@@ -36,12 +38,12 @@ def create_app():
 
     # Retrieve module path
     module_path = os.path.abspath(os.path.dirname(__file__))
-    flask_app.logger.info(f"Module path: {module_path}")
+    flask_app.logger.info("Module path: %s", module_path)
 
     # Load configuration json
     # load central config file first
     config_path = os.path.join(module_path, "config.json")
-    flask_app.user_config = json.load(open(config_path))
+    flask_app.user_config = json.load(open(config_path, encoding='utf-8'))
 
     data_path = flask_app.user_config["data_path"]
     user_config_path = os.path.join(module_path, data_path, 'config.json')
@@ -51,7 +53,7 @@ def create_app():
     if os.path.isfile(user_config_path):
         # if yes, load that file, too
         flask_app.logger.info("Using config file from data context")
-        flask_app.user_config = json.load(open(user_config_path))
+        flask_app.user_config = json.load(open(user_config_path, encoding='utf-8'))
     else:
         # if not, copy central config file to data directory
         flask_app.logger.warning("Config file does not exist within the data "
@@ -70,10 +72,10 @@ def create_app():
 
     if not isinstance(numeric_loglevel, int):
         flask_app.logger.info(
-            'Invalid log level {0} in config file: %s'.format(self.config["log_level"]))
+            'Invalid log level in config file: %s', log_level)
     else:
         file_handler.setLevel(numeric_loglevel)
-    
+
     logging_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     formatter = logging.Formatter(logging_format)
     file_handler.setFormatter(formatter)
@@ -85,7 +87,9 @@ def create_app():
     flask_app.user_config["photos_path"] = os.path.join(
         module_path, flask_app.user_config["photos_path"])
     flask_app.logger.info(
-        "Photos path: " + flask_app.user_config["photos_path"])
+        "Photos path: %s",
+        flask_app.user_config["photos_path"],
+    )
     if os.path.isdir(flask_app.user_config["photos_path"]) is False:
         os.mkdir(flask_app.user_config["photos_path"])
         flask_app.logger.warning(

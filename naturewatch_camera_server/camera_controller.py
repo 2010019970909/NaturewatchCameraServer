@@ -1,12 +1,13 @@
-import threading
-import cv2
-import imutils
-import time
-import logging
 import io
 import json
-import numpy as np
+import logging
 import os
+import threading
+import time
+
+import cv2
+import imutils
+import numpy as np
 
 try:
     import picamera
@@ -23,6 +24,9 @@ class CameraController(threading.Thread):
         self.cancelled = False
 
         self.logger = logger
+        if self.logger is None:
+            self.logger = logging
+
         self.config = config
 
         # Desired image resolution
@@ -51,6 +55,12 @@ class CameraController(threading.Thread):
         self.camera = None
         self.rotated_camera = False
 
+        # Non picamera attributes
+        self.iso = None
+        self.shutter_speed = None
+        self.exposure_mode = None
+        self.raw_image = None
+
         if picamera is not None:
             # Use pi camera
             self.logger.info("CameraController: picamera module exists.")
@@ -76,7 +86,7 @@ class CameraController(threading.Thread):
                         # Get image from Pi camera
                         self.picamera_md_output.truncate(0)
                         self.picamera_md_output.seek(0)
-                        self.picamera_md_stream.__next__()
+                        next(self.picamera_md_stream)
                         self.image = self.picamera_md_output.array
                         if self.image is None:
                             self.logger.warning(
@@ -92,7 +102,7 @@ class CameraController(threading.Thread):
                 else:
                     try:
                     # Get image from webcam
-                        ret, self.raw_image = self.capture.read()
+                        _, self.raw_image = self.capture.read()
                         if self.raw_image is None:
                             self.logger.warning(
                                 "CameraController: got empty webcam image.")
@@ -145,7 +155,7 @@ class CameraController(threading.Thread):
 
     # Get MD image in binary jpeg encoding format
     def get_image_binary(self):
-        r, buf = cv2.imencode(".jpg", self.get_md_image())
+        _, buf = cv2.imencode(".jpg", self.get_md_image())
         return buf
 
     def get_video_stream(self):
@@ -193,15 +203,15 @@ class CameraController(threading.Thread):
             )
             self.picamera_photo_stream.seek(0)
             # "Decode" the image from the stream, preserving colour
-            s = cv2.imdecode(np.fromstring(
+            decoded_image = cv2.imdecode(np.fromstring(
                 self.picamera_photo_stream.getvalue(), dtype=np.uint8), 1)
 
-            if s is not None:
-                return s.copy()
+            if decoded_image is not None:
+                return decoded_image.copy()
             return None
 
         else:
-            ret, raw_image = self.capture.read()
+            _, raw_image = self.capture.read()
             if raw_image is None:
                 self.logger.error(
                     "CameraController: webcam returned empty hires image.")
@@ -245,7 +255,7 @@ class CameraController(threading.Thread):
             f'{self.camera.framerate}'
         )
 
-# TODO: use correct port fitting the requested resolution
+        # TODO: use correct port fitting the requested resolution
         # Set up low res stream for motion detection
         self.picamera_md_output = picamera.array.PiRGBArray(
             self.camera,
@@ -328,9 +338,10 @@ class CameraController(threading.Thread):
             time.sleep(0.5)
             self.camera.shutter_speed = shutter_speed
             self.camera.exposure_mode = 'off'
-            g = self.camera.awb_gains
+            gains = self.camera.awb_gains
             self.camera.awb_mode = 'off'
-            self.camera.awb_gains = g
+            # Restore stored gains
+            self.camera.awb_gains = gains
         else:
             self.iso = iso
             self.shutter_speed = shutter_speed
@@ -370,5 +381,5 @@ class CameraController(threading.Thread):
     def update_config(new_config, config_path):
         contents = json.dumps(
             new_config, sort_keys=True, indent=4, separators=(',', ': '))
-        open(config_path, 'w').write(contents)
+        open(config_path, 'w', encoding='utf-8').write(contents)
         return new_config

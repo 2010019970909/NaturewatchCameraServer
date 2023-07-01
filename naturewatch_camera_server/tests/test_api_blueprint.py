@@ -1,7 +1,9 @@
-import pytest
-import sys
 import json
+import sys
 import time
+
+import pytest
+
 from naturewatch_camera_server import create_app
 
 

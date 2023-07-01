@@ -1,35 +1,35 @@
-import pytest
-import sys
-import json
+import datetime
 import os
 import time
-import datetime
-from naturewatch_camera_server import create_app
-from naturewatch_camera_server.FileSaver import FileSaver
 
-file_saver = None
-app = None
+import pytest
+
+from naturewatch_camera_server import create_app
+from naturewatch_camera_server.file_saver import FileSaver
+
+FILE_SAVER = None
+APP = None
 
 
 @pytest.fixture(autouse=True, scope="session")
 def run_around_tests():
-    global file_saver
-    global app
-    app = create_app()
-    file_saver = FileSaver(app.user_config)
-    testing_client = app.test_client()
+    global FILE_SAVER
+    global APP
+    APP = create_app()
+    FILE_SAVER = FileSaver(APP.user_config)
+    testing_client = APP.test_client()
 
-    while app.camera_controller.is_alive() is False:
-        app.camera_controller.start()
+    while APP.camera_controller.is_alive() is False:
+        APP.camera_controller.start()
         time.sleep(1)
 
     # Establish application context
-    ctx = app.app_context()
+    ctx = APP.app_context()
     ctx.push()
 
     yield testing_client
 
-    app.camera_controller.stop()
+    APP.camera_controller.stop()
 
     ctx.pop()
 
@@ -41,16 +41,16 @@ def test_image_save():
     THEN the image should exist in the file system and should not be empty
     """
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    filename = file_saver.save_image(app.camera_controller.get_md_image(), timestamp)
-    assert os.path.isfile(app.user_config["photos_path"] + filename)
-    assert os.path.getsize(app.user_config["photos_path"] + filename) != 0
-    os.remove(app.user_config["photos_path"] + filename)
+    filename = FILE_SAVER.save_image(APP.camera_controller.get_md_image(), timestamp)
+    assert os.path.isfile(APP.user_config["photos_path"] + filename)
+    assert os.path.getsize(APP.user_config["photos_path"] + filename) != 0
+    os.remove(APP.user_config["photos_path"] + filename)
 
 
 def test_check_storage():
     """
     GIVEN a FileSaver instance
-    WHEN checkStorage is called
+    WHEN check_storage is called
     THEN percentage of available storage should be returned
     """
-    assert file_saver.checkStorage() <= 100
+    assert FILE_SAVER.check_storage() <= 100

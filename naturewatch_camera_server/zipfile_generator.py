@@ -1,11 +1,12 @@
+"""A Zipfile generator to write zip files in a stream"""
 from io import RawIOBase
-from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
+from zipfile import ZipFile, ZipInfo
 
-import os
 
 class ZipfileGenerator():
     class UnseekableStream(RawIOBase):
         def __init__(self):
+            super().__init__()
             self._buffer = b''
 
         def writable(self):
@@ -24,9 +25,11 @@ class ZipfileGenerator():
 
     # Constructor
     def __init__(self,
-                 paths = [], # { 'filename':'', 'arcname':'' }
+                 paths: list, # { 'filename':'', 'arcname':'' }
                  chunk_size = 0x8000):
 
+        if paths is None:
+            paths = []
         self.paths      = paths
         self.chunk_size = chunk_size
 
@@ -51,7 +54,7 @@ class ZipfileGenerator():
                     # or should it be solved by setting the
                     # system time with the browser time?
                     # VS: Seems to be solved using the former technique.
-                    
+
                     with (open(path['filename'], 'rb') as entry,
                           zipfile.open(z_info, mode='w') as dest):
                         for chunk in iter(
@@ -66,4 +69,3 @@ class ZipfileGenerator():
 
         # ZipFile was closed: get the final bytes
         yield output.get()
-
