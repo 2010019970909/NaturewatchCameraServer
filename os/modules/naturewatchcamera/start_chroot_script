@@ -17,7 +17,7 @@ unpack /filesystem/home/pi /home/"${BASE_USER}" "${BASE_USER}"
 unpack /filesystem/home/root /root root
 unpack /filesystem/boot /boot
 
-pushd /NaturewatchCameraServer
+pushd /home/pi/NaturewatchCameraServer
 source /install.sh /usr/local/src
 popd
 
