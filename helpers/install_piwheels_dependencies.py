@@ -88,7 +88,8 @@ def run_command(command_list: list):
         if output == b'' and process.poll() is not None:
             break
         if output:
-            print(output.decode(locale.getdefaultlocale()[1]), end='')
+            print(output.decode(
+                locale.getdefaultlocale()[1], encoding='utf-8'), end='')
     return process.poll()
 
 
