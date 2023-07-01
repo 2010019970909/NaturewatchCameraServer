@@ -32,7 +32,7 @@ def generate_mjpg(camera_controller):
         latest_frame = camera_controller.get_image_binary()
         response = b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + \
             bytearray(latest_frame) + b'\r\n'
-        yield(response)
+        yield (response)
         time.sleep(0.2)
 
 
@@ -129,13 +129,13 @@ def construct_settings_object(camera_controller, change_detector):
     min_width = current_app.user_config["min_width"]
     more_sensitivity = current_app.user_config["more_sensitivity"]
 
-    if change_detector.minWidth == less_sensitivity:
+    if change_detector.min_width == less_sensitivity:
         sensitivity = "less"
 
-    elif change_detector.minWidth == min_width:
+    elif change_detector.min_width == min_width:
         sensitivity = "default"
 
-    elif change_detector.minWidth == more_sensitivity:
+    elif change_detector.min_width == more_sensitivity:
         sensitivity = "more"
 
     settings = {
