@@ -39,13 +39,12 @@ apt-get dist-upgrade -y
 # apt-get install -y build-essential cmake pkg-config libjpeg-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libgtk2.0-dev libgtk-3-dev libatlas-base-dev libblas-dev libeigen{2,3}-dev liblapack-dev gfortran
 # apt-get install -y libilmbase25 libopenexr-dev libgstreamer1.0-dev
 # apt-get install -y gpac
-apt-get install -y python3 python3-pip python3-dev
+apt-get install -y python3 python3-pip python3-dev python3-setuptools python3-wheel python3-requests
 apt-get install -y python3-picamera2 --no-install-recommends
 apt-get install -y ffmpeg
 
 echo "Installing OpenCV"
 # Note: python is now python3 in current distro releases
-python -m pip install -U pip setuptools wheel requests
 python ./helpers/install_piwheels_dependencies.py opencv-python-headless
 python ./helpers/install_piwheels_dependencies.py numpy
 apt-get autoremove -y
