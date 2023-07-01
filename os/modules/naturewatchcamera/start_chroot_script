@@ -13,13 +13,12 @@ set -e
 source /common.sh
 install_cleanup_trap
 
+# NaturewatchCameraServer is unpacked here (home/pi/NaturewatchCameraServer)
 unpack /filesystem/home/pi /home/"${BASE_USER}" "${BASE_USER}"
 unpack /filesystem/home/root /root root
 unpack /filesystem/boot /boot
 
-pushd /home/pi/NaturewatchCameraServer
-source /install.sh /usr/local/src
-popd
+source /home/pi/NaturewatchCameraServer/install.sh /usr/local/src
 
 unpack /filesystem/home/pi /home/"${BASE_USER}" "${BASE_USER}"
 # Unpack root at the end, so files are modified before
