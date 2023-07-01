@@ -24,7 +24,7 @@ jobs:
           path: repository
 
       - name: Setup node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: 16
 
@@ -49,16 +49,18 @@ jobs:
         run: |
           cp -r repository /tmp/NaturewatchCameraServer
           rm -rf /tmp/NaturewatchCameraServer/os
+          # Remove nodejs build files
           rm -rf /tmp/NaturewatchCameraServer/naturewatch_camera_server/static/client/node_modules
-          mkdir -p repository/os/modules/naturewatchcamera/filesystem/usr/local/src/NaturewatchCameraServer
-          mv /tmp/NaturewatchCameraServer repository/os/modules/naturewatchcamera/filesystem/usr/local/src/NaturewatchCameraServer
-          ls repository/os/modules/naturewatchcamera/filesystem/usr/local/src/NaturewatchCameraServer
+          # Move the project within a new directory
+          cp -r /tmp/NaturewatchCameraServer repository/os/modules/naturewatchcamera/filesystem/
+          rm -rf /tmp/NaturewatchCameraServer
+          ls repository/os/modules/naturewatchcamera/filesystem/NaturewatchCameraServer
 
       - name: Build Image
         run: |
           export BASE_IMAGE_ENLARGEROOT=2000
-          export AUTO_HOTSPOT_NAME=MyNaturewatch
-          export AUTO_HOTSPOT_PASSWORD=badgersandfoxes
+          # export AUTO_HOTSPOT_NAME=MyNaturewatch
+          # export AUTO_HOTSPOT_PASSWORD=badgersandfoxes
           sudo modprobe loop && cd repository/os
           sudo bash -x ./build_dist
 
@@ -67,7 +69,7 @@ jobs:
 
       - name: Zip Output
         run: gzip mynaturewatch-camera.img
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: mynaturewatch-camera.img.gz
           path: mynaturewatch-camera.img.gz

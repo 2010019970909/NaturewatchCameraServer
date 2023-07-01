@@ -45,10 +45,13 @@ apt-get install -y ffmpeg
 apt-get autoremove -y
 
 echo "Installing OpenCV"
-python3 -m pip install -U pip setuptools wheel
-python3 -m pip install -U numpy
+# Note: python is now python3 in current distro releases
+python -m pip install -U pip setuptools wheel requests
+python ./helpers/install_piwheels_dependencies.py opencv-python-headless
+python ./helpers/install_piwheels_dependencies.py numpy
+python -m pip install -U numpy
 # Install latest Wheel available
-python3 -m pip install -U opencv-python-headless --prefer-binary
+python -m pip install -U opencv-python-headless --prefer-binary
 
 # Copy to installation path
 mkdir -p $INSTALLATION_PATH/NaturewatchCameraServer >/dev/null 2>&1
@@ -58,7 +61,7 @@ pushd $INSTALLATION_PATH
 pushd NaturewatchCameraServer
 
 echo "Installing repo dependencies"
-python3 -m pip install -r requirements-pi.txt
+python -m pip install -r requirements-pi.txt
 
 echo "Adding services"
 systemctl stop python.naturewatch.service >/dev/null 2>&1

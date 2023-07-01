@@ -18,9 +18,9 @@ unpack /filesystem/home/root /root root
 unpack /filesystem/boot /boot
 unpack /filesystem/usr/local/src /usr/local/src
 
-pwd
-chmod +x /install.sh
-source /install.sh
+pushd /NaturewatchCameraServer
+source /install.sh /usr/local/src
+popd
 
 unpack /filesystem/home/pi /home/"${BASE_USER}" "${BASE_USER}"
 # Unpack root at the end, so files are modified before
