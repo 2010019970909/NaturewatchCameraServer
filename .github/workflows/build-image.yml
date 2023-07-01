@@ -52,9 +52,9 @@ jobs:
           # Remove nodejs build files
           rm -rf /tmp/NaturewatchCameraServer/naturewatch_camera_server/static/client/node_modules
           # Move the project within a new directory
-          cp -r /tmp/NaturewatchCameraServer repository/os/modules/naturewatchcamera/filesystem/
+          cp -r /tmp/NaturewatchCameraServer repository/os/modules/naturewatchcamera/filesystem/home/pi
           rm -rf /tmp/NaturewatchCameraServer
-          ls repository/os/modules/naturewatchcamera/filesystem/NaturewatchCameraServer
+          ls repository/os/modules/naturewatchcamera/filesystem/home/pi/NaturewatchCameraServer
 
       - name: Build Image
         run: |
