@@ -1,6 +1,4 @@
 # TODO: create "getSpace" api call when filesaver is global
-
-
 from flask import Blueprint, Response, request, json, current_app, redirect
 import time
 import subprocess
@@ -61,6 +59,7 @@ def generate_jpg(camera_controller):
         current_app.logger.warning("Could not retrieve image binary.")
         current_app.logger.exception(e)
         return b'Empty'
+
     time.sleep(0.1)
 
 
@@ -124,12 +123,17 @@ def construct_settings_object(camera_controller, change_detector):
     """
 
     sensitivity = "default"
-    if change_detector.minWidth == current_app.user_config["less_sensitivity"]:
+    less_sensitivity = current_app.user_config["less_sensitivity"]
+    min_width = current_app.user_config["min_width"]
+    more_sensitivity = current_app.user_config["more_sensitivity"]
+
+    if change_detector.minWidth == less_sensitivity:
         sensitivity = "less"
-    elif change_detector.minWidth == current_app.user_config["min_width"]:
+
+    elif change_detector.minWidth == min_width:
         sensitivity = "default"
-    elif change_detector.minWidth == current_app.user_config[
-            "more_sensitivity"]:
+    
+    elif change_detector.minWidth == more_sensitivity:
         sensitivity = "more"
 
     settings = {
@@ -169,8 +173,10 @@ def start_session_handler(session_type):
     """
     if session_type == "photo":
         current_app.change_detector.start_photo_session()
+
     elif session_type == "video":
         current_app.change_detector.start_video_session()
+
     elif session_type == "timelapse":
         current_app.change_detector.start_timelapse_session()
 
@@ -197,21 +203,22 @@ def stop_session_handler():
 
 @api.route('/time/<time_string>', methods=['POST'])
 def update_time(time_string):
-    if current_app.change_detector.device_time is None:
-        if float(time_string) > 1580317004:
-            current_app.change_detector.device_time = float(time_string)
-            current_app.change_detector.device_time_start = time.time()
-            return Response(
-                '{"SUCCESS": "' + time_string + '"}',
-                status=200, mimetype='application/json')
-        else:
-            return Response(
-                '{"ERROR": "' + time_string + '"}',
-                status=400, mimetype='application/json')
-    else:
+    if current_app.change_detector.device_time is not None:
         return Response(
             '{"NOT_MODIFIED": "' + time_string + '"}',
             status=304, mimetype='application/json')
+
+    if float(time_string) > 1580317004:
+        current_app.change_detector.device_time = float(time_string)
+        current_app.change_detector.device_time_start = time.time()
+        return Response(
+            '{"SUCCESS": "' + time_string + '"}',
+            status=200, mimetype='application/json')
+
+    return Response(
+        '{"ERROR": "' + time_string + '"}',
+        status=400, mimetype='application/json')
+        
 
 
 @api.route('/version')
@@ -220,18 +227,23 @@ def update_time(time_string):
 def get_version(argument: str = 'date', destination: str = ''):
     if destination != '' and 'url' in destination:
         return redirect(get_version(destination))
+
     if argument == 'hash':
         return git('rev-parse', 'HEAD')
+
     if argument == 'short_hash':
         return git('rev-parse', '--short', 'HEAD')
+
     elif argument == 'url':
         return git('remote', 'get-url', 'origin')
+
     elif argument == 'commit_url':
         url = git('remote', 'get-url', 'origin')
         if url.endswith('.git'):
             url = url[:url.rfind('.git')]
         commit_hash = git('rev-parse', 'HEAD')
         return f'{url}/commit/{commit_hash}'
+
     else:  # argument == 'date'
         commit_hash = git('rev-parse', 'HEAD')
         return git('show', '-s', r'--format=%ci', commit_hash)

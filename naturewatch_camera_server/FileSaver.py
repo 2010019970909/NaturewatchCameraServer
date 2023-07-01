@@ -4,60 +4,30 @@ import io
 import logging
 import os
 import datetime
-from subprocess import call
+import psutil
 import zipfile
 
-try:
-    import picamera
-    import picamera.array
-    picamera_exists = True
-except ImportError:
-    picamera = None
-    picamera_exists = False
-
+from subprocess import call
 
 class FileSaver(Thread):
 
     def __init__(self, config, logger=None):
         super(FileSaver, self).__init__()
 
-        if logger is not None:
-            self.logger = logger
-        else:
+        self.logger = logger
+        if self.logger is None:
             self.logger = logging
 
         self.config = config
 
-# Scaledown factor for thumbnail images
-
+        # Scaledown factor for thumbnail images
         self.thumbnail_factor = self.config["tn_width"] / self.config["img_width"]
 
     def checkStorage(self):
         # Disk information
-        disk_root = self.getDf()
-        out = disk_root[4].split('%')
-        self.logger.debug('FileSaver: {} % of storage space used.'.format(str(out[0])))
-        return int(out[0])
-
-    @staticmethod
-    def getDfDescription():
-        df = os.popen("df -h /")
-        i = 0
-        while True:
-            i = i + 1
-            line = df.readline()
-            if i == 1:
-                return line.split()[0:6]
-
-    @staticmethod
-    def getDf():
-        df = os.popen("df -h /")
-        i = 0
-        while True:
-            i = i + 1
-            line = df.readline()
-            if i == 2:
-                return line.split()[0:6]
+        percent = psutil.disk_usage('/').percent
+        self.logger.debug(f'FileSaver: {percent} % of storage space used.')
+        return percent
 
     def save_image(self, image, timestamp):
         """
@@ -67,41 +37,42 @@ class FileSaver(Thread):
         :return: filename
         """
         if self.checkStorage() < 99:
-            filename = timestamp
-            filename = filename + ".jpg"
+            filename = f'{timestamp}.jpg'
             self.logger.debug('FileSaver: saving file')
+
             try:
-                cv2.imwrite(os.path.join(self.config["photos_path"], filename), image)
-                self.logger.info("FileSaver: saved file to " + os.path.join(self.config["photos_path"], filename))
+                path = os.path.join(self.config["photos_path"], filename)
+                cv2.imwrite(path, image)
+                self.logger.info(f"FileSaver: saved file to {path}")
                 return filename
-            except Exception as e:
+
+            except Exception as error:
                 self.logger.error('FileSaver: save_photo() error: ')
-                self.logger.exception(e)
-                pass
+                self.logger.exception(error)
         else:
             self.logger.error('FileSaver: not enough space to save image')
             return None
 
     def save_thumb(self, image, timestamp, media_type):
+        filename = f'thumb_{timestamp}.jpg'
+        self.logger.debug(f'FileSaver: saving thumb "{filename}"')
 
-        filename = "thumb_"
-        filename = filename + timestamp
-        filename = filename + ".jpg"
-        self.logger.debug('FileSaver: saving thumb')
         try:
             if media_type in ["photo", "timelapse"]:
-# TODO: Build a proper downscaling routine for the thumbnails
-#                self.logger.debug('Scaling by a factor of {}'.format(self.thumbnail_factor))
-#                thumb = cv2.resize(image, 0, fx=self.thumbnail_factor, fy=self.thumbnail_factor, interpolation=cv2.INTER_AREA)
-                cv2.imwrite(os.path.join(self.config["photos_path"], filename), image)
-                self.logger.info("FileSaver: saved thumbnail to " + os.path.join(self.config["photos_path"], filename))
+            # TODO: Build a proper downscaling routine for the thumbnails
+            # self.logger.debug('Scaling by a factor of {}'.format(self.thumbnail_factor))
+            # thumb = cv2.resize(image, 0, fx=self.thumbnail_factor, fy=self.thumbnail_factor, interpolation=cv2.INTER_AREA)
+                path = os.path.join(self.config["photos_path"], filename)
             else:
-                cv2.imwrite(os.path.join(self.config["videos_path"], filename), image)
+                path = os.path.join(self.config["videos_path"], filename)
+            
+            cv2.imwrite(path, image)
+            self.logger.info("FileSaver: saved thumbnail to {path}")
             return filename
-        except Exception as e:
+
+        except Exception as error:
             self.logger.error('FileSaver: save_photo() error: ')
-            self.logger.exception(e)
-            pass
+            self.logger.exception(error)
 
     def save_video(self, stream, timestamp):
         """
@@ -111,19 +82,20 @@ class FileSaver(Thread):
         :return: none
         """
         if self.checkStorage() < 99:
-            self.logger.info('FileSaver: Writing video...')
-            filename = timestamp
-            filenameMp4 = filename
-            filename = filename + ".h264"
-            filenameMp4 = filenameMp4 + ".mp4"
-            self.logger.info('FileSaver: done writing video ' + filename)
+            filename = f"{timestamp}.h264"
+            filename_mp4 = f"{timestamp}.mp4"
             input_video = os.path.join(self.config["videos_path"], filename)
+            output_video = os.path.join(self.config["videos_path"], filename_mp4)
+
+            self.logger.info('FileSaver: Writing video...') 
             stream.copy_to(input_video, seconds=15)
-            output_video = os.path.join(self.config["videos_path"], filenameMp4)
             call(["MP4Box", "-fps", str(self.config["frame_rate"]), "-add", input_video, output_video])
+            self.logger.info(f'FileSaver: done writing video "{filename}"')
+
             os.remove(input_video)
-            self.logger.debug('FileSaver: removed interim file ' + filename)
-            return filenameMp4
+            self.logger.debug(f'FileSaver: removed interim file "{filename}"')
+
+            return filename_mp4
         else:
             self.logger.error('FileSaver: not enough space to save video')
             return None
@@ -131,18 +103,19 @@ class FileSaver(Thread):
     @staticmethod
     def download_all_video():
         timestamp = datetime.datetime.now()
-        filename = "video_"+timestamp.strftime('%Y-%m-%d-%H-%M-%S')
-        filename = filename.strip()
-        return filename
+        filename = f"video_{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}"
+        return filename.strip()
 
     def download_zip(self, filename):
         input_file = os.path.join(self.config["videos_path"], filename)
-        output_zip = input_file + ".zip"
+        output_zip = f"{input_file}.zip"
         zf = zipfile.ZipFile(output_zip, mode='w')
+
         try:
             self.logger.info('FileSaver: adding file')
             zf.write(input_file, os.path.basename(input_file))
         finally:
             self.logger.info('FileSaver: closing')
             zf.close()
+
         return output_zip

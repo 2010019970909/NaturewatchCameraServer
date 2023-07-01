@@ -3,7 +3,7 @@ Description=My Naturewatch Camera Server
 After=multi-user.target
 
 [Service]
-ExecStart=/usr/bin/python3 -m ${path}/naturewatch_camera_server -p 80
+ExecStart=/usr/bin/python3 -m naturewatch_camera_server -p 80
 WorkingDirectory=${path}/NaturewatchCameraServer
 Restart=on-failure
 User=root

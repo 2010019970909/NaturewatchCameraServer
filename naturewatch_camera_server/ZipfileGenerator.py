@@ -4,7 +4,6 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import os
 
 class ZipfileGenerator():
-
     class UnseekableStream(RawIOBase):
         def __init__(self):
             self._buffer = b''
@@ -33,28 +32,30 @@ class ZipfileGenerator():
 
     # Generator
     def get(self):
-
         output = ZipfileGenerator.UnseekableStream()
 
-        with ZipFile(output, mode='w') as zf:
-
+        with ZipFile(output, mode='w') as zipfile:
             for path in self.paths:
-
                 try:
                     if len(path['arcname']) == 0:
                         path['arcname'] = path['filename']
 
-                    z_info = ZipInfo.from_file(path['filename'], path['arcname'])
+                    z_info = ZipInfo.from_file(
+                        path['filename'], path['arcname'])
 
-                    # it's not worth the resources, achieves max 0.1% on JPEGs...
+                    # it's not worth the resources,
+                    # achieves max 0.1% on JPEGs...
                     #z_info.compress_type = ZIP_DEFLATED
 
                     # should we try to fix the disk timestamps?
-                    # or should it be solved by setting the system time with the browser time?
+                    # or should it be solved by setting the
+                    # system time with the browser time?
+                    # VS: Seems to be solved using the former technique.
                     
-                    with open(path['filename'], 'rb') as entry, zf.open(z_info, mode='w') as dest:
-
-                        for chunk in iter(lambda: entry.read(self.chunk_size), b''):
+                    with (open(path['filename'], 'rb') as entry,
+                          zipfile.open(z_info, mode='w') as dest):
+                        for chunk in iter(
+                            lambda: entry.read(self.chunk_size), b''):
                             dest.write(chunk)
                             # yield chunk of the zip file stream in bytes.
                             yield output.get()

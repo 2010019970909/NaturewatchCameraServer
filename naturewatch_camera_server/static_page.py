@@ -15,13 +15,16 @@ def serve(path):
     Static root endpoint
     :return: index.html or file requested
     """
-    if path != "" and os.path.exists(
-            os.path.join(current_app.static_folder, path)):
+    static_path = os.path.join(current_app.static_folder, path)
+
+    if path != "" and os.path.exists(static_path):
         return send_from_directory(current_app.static_folder, path)
+
     elif path == "" or "gallery" in path:
         return render_template(
             'index.html',
             version_hash=version_hash,
-            version_date=version_date)
-    else:
-        return Response("Page not found. Please check the URL!", status=404)
+            version_date=version_date,
+        )
+
+    return Response("Page not found. Please check the URL!", status=404)

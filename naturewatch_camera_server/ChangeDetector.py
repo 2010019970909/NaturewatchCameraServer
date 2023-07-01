@@ -54,9 +54,8 @@ class ChangeDetector(Thread):
         while not self.cancelled:
             try:
                 self.update()
-            except Exception as e:
-                self.logger.exception(e)
-                continue
+            except Exception as error:
+                self.logger.exception(error)
 
     def cancel(self):
         """
@@ -74,15 +73,13 @@ class ChangeDetector(Thread):
         :return: none
         """
         timestamp = datetime.datetime.now()
-        filename = timestamp.strftime('%Y-%m-%d-%H-%M-%S')
-        filename = filename + ".jpg"
+        filename = f"{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}.jpg"
 
         try:
-            cv2.imwrite("photos/" + filename, image)
-        except Exception as e:
+            cv2.imwrite(f"photos/{filename}", image)
+        except Exception as error:
             self.logger.error('ChangeDetector: save_photo() error: ')
-            self.logger.exception(e)
-            pass
+            self.logger.exception(error)
 
     def detect_change_contours(self, img):
         """
@@ -103,9 +100,11 @@ class ChangeDetector(Thread):
         frame_delta = cv2.absdiff(gray, cv2.convertScaleAbs(self.avg))
 
         # threshold, dilate and find contours
-        thresh = cv2.threshold(frame_delta, self.config["delta_threshold"], 255, cv2.THRESH_BINARY)[1]
+        thresh = cv2.threshold(frame_delta, self.config["delta_threshold"],
+                               255, cv2.THRESH_BINARY)[1]
         thresh = cv2.dilate(thresh, None, iterations=2)
-        cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                                   cv2.CHAIN_APPROX_SIMPLE)
 
         # find largest contour
         largest_contour = self.get_largest_contour(cnts)
@@ -115,12 +114,14 @@ class ChangeDetector(Thread):
 
         (x, y, w, h) = cv2.boundingRect(largest_contour)
 
-        # if the contour is too small, return false
-        if w > self.maxWidth or w < self.minWidth or h > self.maxHeight or h < self.minHeight:
+        # if the contour is too small or too big, return false
+        if (w < self.minWidth or h < self.minHeight or
+            w > self.maxWidth or h > self.maxHeight):
             return False
-        else:
-            if self.get_fake_time() - self.lastPhotoTime >= self.config['min_photo_interval_s']:
-                return True
+
+        time_interval = self.get_fake_time() - self.lastPhotoTime
+        if time_interval >= self.config['min_photo_interval_s']:
+            return True
 
         return False
 
@@ -135,14 +136,13 @@ class ChangeDetector(Thread):
             return None
         else:
             areas = [cv2.contourArea(c) for c in contours]
-            maxIndex = np.argmax(areas)
-            return contours[maxIndex]
+            return contours[np.argmax(areas)]
 
     def set_sensitivity(self, min_width, max_width):
-        self.minWidth = min_width
+        self.maxHeight = max_width
         self.minHeight = min_width
         self.maxWidth = max_width
-        self.maxHeight = max_width
+        self.minWidth = min_width
 
     def start_photo_session(self):
         self.logger.info('ChangeDetector: starting photo capture')
@@ -165,67 +165,93 @@ class ChangeDetector(Thread):
         self.logger.info('ChangeDetector: ending capture')
         if self.mode == "video":
             self.camera_controller.stop_video_stream()
-        elif self.mode == "photo" or self.mode == "timelapse":
-            pass
+        # Not useful
+        # elif self.mode == "photo" or self.mode == "timelapse":
+        #     pass
         self.mode = "inactive"
 
-# TODO: whether to use the video-port or not does not directly depend on the mode
-# In case video is requested, the video port will always be used for both resolutions
-# In case photo is requested, the video port can be used, but need not. It should be left a matter of configuration
+    # TODO: whether to use the video-port or not does not directly
+    # depend on the mode
+    # In case video is requested, the video port will always be used for both
+    # resolutions
+    # In case photo is requested, the video port can be used, but need not.
+    # It should be left a matter of configuration
     def update(self):
         time.sleep(0.02)
         # only check for motion while a session is active
         if self.mode in ["photo", "video"]:
             # get an md image
             img = self.camera_controller.get_md_image()
+            
             # only proceed if there is an image
             if img is not None:
                 if self.detect_change_contours(img) is True:
-                    self.logger.info("ChangeDetector: detected motion. Starting capture...")
+                    self.logger.info(
+                        "ChangeDetector: detected motion. Starting capture..."
+                    )
                     timestamp = self.get_formatted_time()
                     if self.mode == "photo":
                         image = self.camera_controller.get_hires_image()
                         self.file_saver.save_image(image, timestamp)
-                        self.file_saver.save_thumb(imutils.resize(image, width=self.config["md_width"]), timestamp, self.mode)
+                        self.file_saver.save_thumb(
+                            imutils.resize(image, width=self.config["md_width"]),
+                            timestamp,
+                            self.mode,
+                        )
                         self.lastPhotoTime = self.get_fake_time()
-                        self.logger.info("ChangeDetector: photo capture completed")
+                        self.logger.info(
+                            "ChangeDetector: photo capture completed")
+
                     elif self.mode == "video":
                         self.file_saver.save_thumb(img, timestamp, self.mode)
-                        self.camera_controller.wait_recording(self.config["video_duration_after_motion"])
-                        self.logger.info("ChangeDetector: video capture completed")
+                        self.camera_controller.wait_recording(
+                            self.config["video_duration_after_motion"])
+                        self.logger.info(
+                            "ChangeDetector: video capture completed")
+
                         with self.camera_controller.get_video_stream().lock:
-                            self.file_saver.save_video(self.camera_controller.get_video_stream(), timestamp)
+                            self.file_saver.save_video(
+                                self.camera_controller.get_video_stream(),
+                                timestamp,
+                            )
+
                         self.lastPhotoTime = self.get_fake_time()
                         self.logger.debug("ChangeDetector: video timer reset")
                     else:
-        # TODO: Add debug code that logs a line every x seconds so we can see the ChangeDetector is still alive
-        #            self.logger.debug("ChangeDetector: idle")
+                        # TODO: Add debug code that logs a line
+                        # every x seconds so we can see the ChangeDetector
+                        # is still alive:
+                        # self.logger.debug("ChangeDetector: idle")
                         pass
             else:
-                self.logger.error("ChangeDetector: not receiving any images for motion detection!")
+                self.logger.error("ChangeDetector: not receiving any images "
+                                  "for motion detection!")
                 time.sleep(1)
 
         # TODO: implement periodic pictures
         elif self.mode == "timelapse":
             # take one picture every minute
             if self.get_fake_time() - self.lastPhotoTime >= self.timelapse:
-                self.logger.info("ChangeDetector: " + str(self.timelapse) + "s elapsed -> capturing...")
+                self.logger.info(
+                    f"ChangeDetector: {self.timelapse} s elapsed -> "
+                    "capturing...")
                 # TODO: no magic numbers! (make it configurable)
                 timestamp = self.get_formatted_time()
                 image = self.camera_controller.get_hires_image()
                 self.file_saver.save_image(image, timestamp)
-                self.file_saver.save_thumb(imutils.resize(image, width=self.config["md_width"]), timestamp, self.mode)
+                self.file_saver.save_thumb(
+                    imutils.resize(image, width=self.config["md_width"]),
+                    timestamp,
+                    self.mode,
+                )
                 self.lastPhotoTime = self.get_fake_time()
                 self.logger.info("ChangeDetector: photo capture completed")
 
     def get_fake_time(self):
-        if self.device_time is not None:
-            time_float = self.device_time + time.time() - self.device_time_start
-        else:
-            time_float = time.time()
-        return time_float
+        if self.device_time is None:
+            return time.time()
+        return self.device_time + time.time() - self.device_time_start
 
     def get_formatted_time(self):
-        time_float = self.get_fake_time()
-        timestamp = datetime.utcfromtimestamp(time_float).strftime('%Y-%m-%d-%H-%M-%S')
-        return timestamp
+        current_time = datetime.utcfromtimestamp(self.get_fake_time())
+        return current_time.strftime('%Y-%m-%d-%H-%M-%S')
