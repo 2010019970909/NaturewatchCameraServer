@@ -45,8 +45,8 @@ apt-get install -y ffmpeg
 
 echo "Installing OpenCV"
 # Note: python is now python3 in current distro releases
-python ./helpers/install_piwheels_dependencies.py opencv-python-headless
-python ./helpers/install_piwheels_dependencies.py numpy
+python ${DIR}/helpers/install_piwheels_dependencies.py opencv-python-headless
+python ${DIR}/helpers/install_piwheels_dependencies.py numpy
 apt-get autoremove -y
 python -m pip install -U numpy
 # Install latest Wheel available
