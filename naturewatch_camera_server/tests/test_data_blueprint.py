@@ -1,3 +1,4 @@
+"""Test the data blueprint."""
 import datetime
 import json
 import os
@@ -16,6 +17,9 @@ VIDEOS_THUMB_LIST = []
 
 @pytest.fixture(scope="session")
 def test_client():
+    """Test client for the Flask application.
+    :return: Flask test client
+    """
     app = create_app()
     testing_client = app.test_client()
 
@@ -33,8 +37,10 @@ def test_client():
     # Take 2 photos and record their filenames
     for _ in range(2):
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        thumb = file_saver.save_thumb(app.camera_controller.get_md_image(), timestamp, "photo")
-        filename = file_saver.save_image(app.camera_controller.get_hires_image(), timestamp)
+        thumb = file_saver.save_thumb(
+            app.camera_controller.get_md_image(), timestamp, "photo")
+        filename = file_saver.save_image(
+            app.camera_controller.get_hires_image(), timestamp)
         PHOTOS_LIST.append(filename)
         PHOTOS_THUMB_LIST.append(thumb)
         time.sleep(1)
@@ -44,10 +50,12 @@ def test_client():
     for _ in range(2):
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
         time.sleep(2)
-        thumb = file_saver.save_thumb(app.camera_controller.get_md_image(), timestamp, "video")
+        thumb = file_saver.save_thumb(
+            app.camera_controller.get_md_image(), timestamp, "video")
         app.camera_controller.wait_recording(2)
         with app.camera_controller.get_video_stream().lock:
-            filename = file_saver.save_video(app.camera_controller.get_video_stream(), timestamp)
+            filename = file_saver.save_video(
+                app.camera_controller.get_video_stream(), timestamp)
             VIDEOS_LIST.append(filename)
             VIDEOS_THUMB_LIST.append(thumb)
             time.sleep(1)

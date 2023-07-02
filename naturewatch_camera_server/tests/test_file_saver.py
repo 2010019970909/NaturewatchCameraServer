@@ -1,3 +1,4 @@
+"""Tests for the FileSaver class."""
 import datetime
 import os
 import time
@@ -13,8 +14,11 @@ APP = None
 
 @pytest.fixture(autouse=True, scope="session")
 def run_around_tests():
-    global FILE_SAVER
-    global APP
+    """Fixture to run before and after tests.
+    :return: None
+    """
+    global FILE_SAVER  # pylint: disable=global-statement
+    global APP  # pylint: disable=global-statement
     APP = create_app()
     FILE_SAVER = FileSaver(APP.user_config)
     testing_client = APP.test_client()
@@ -41,7 +45,8 @@ def test_image_save():
     THEN the image should exist in the file system and should not be empty
     """
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    filename = FILE_SAVER.save_image(APP.camera_controller.get_md_image(), timestamp)
+    filename = FILE_SAVER.save_image(
+        APP.camera_controller.get_md_image(), timestamp)
     assert os.path.isfile(APP.user_config["photos_path"] + filename)
     assert os.path.getsize(APP.user_config["photos_path"] + filename) != 0
     os.remove(APP.user_config["photos_path"] + filename)
