@@ -12,7 +12,7 @@ function App() {
                 <Route path="/" exact component={Index} />
                 <Route path="/gallery" exact component={GalleryComponent} />
             </Router>
-            <Footer />
+            {/* <Footer /> */}
         </div>
     );
 }
