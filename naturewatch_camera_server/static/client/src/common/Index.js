@@ -1,7 +1,7 @@
 import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { IdleTimer } from './IdleTimer';
+import IdleTimer from 'react-idle-timer';
 import axios from 'axios';
 import Header from './Header'
 import CameraFeed from './CameraFeed'
@@ -220,7 +220,6 @@ class Index extends React.Component {
                     onIdle={this.onIdle}
                     debounce={250}
                     timeout={1000 * 60}
-                    crossTab={true}
                 />
             </div>
         );

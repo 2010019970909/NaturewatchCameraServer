@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Modal, Button } from 'react-bootstrap';
 import LazyLoad from 'react-lazyload';
-import { CheckCircle, Cancel } from '@mui/icons-material'
+import { CheckCircle, Cancel } from '@material-ui/icons'
 
 class GalleryGrid extends React.Component {
     constructor(props) {
