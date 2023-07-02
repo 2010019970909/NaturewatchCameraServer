@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import Index from "./common/Index";
-import Footer from './common/Footer';
+// import Footer from './common/Footer';
 import GalleryComponent from "./gallery/GalleryComponent";
 
 function App() {
