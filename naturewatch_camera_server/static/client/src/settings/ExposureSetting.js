@@ -44,7 +44,18 @@ class ExposureSetting extends React.Component {
         }
     }
 
+    // Inspired from https://www.codevscolor.com/javascript-nearest-number-in-array#method-3-using-sort-
+    findClosest = (arr, num) => {
+        if (arr == null) {
+            return
+        }
+        return arr.sort((a, b) => Math.abs(b - num) - Math.abs(a - num)).pop();
+    }
+
     getIndexFromShutterSpeed(shutterSpeed) {
+        // Get nearest value
+        shutterSpeed = this.findClosest(Object.values(this.cameraShutterSpeeds), shutterSpeed)
+
         for (var i = 0; i < Object.keys(this.cameraShutterSpeeds).length; i++) {
             if (Object.values(this.cameraShutterSpeeds)[i] === shutterSpeed) {
                 return i;
