@@ -1,3 +1,4 @@
+"""Module for static page endpoints."""
 import os
 
 from flask import (Blueprint, Response, current_app, render_template,
@@ -22,7 +23,7 @@ def serve(path):
     if path != "" and os.path.exists(static_path):
         return send_from_directory(current_app.static_folder, path)
 
-    elif path == "" or "gallery" in path:
+    if path == "" or "gallery" in path:
         return render_template(
             'index.html',
             version_hash=version_hash,

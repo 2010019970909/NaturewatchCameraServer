@@ -1,3 +1,4 @@
+"""Camera controller module."""
 import io
 import json
 import logging
@@ -17,8 +18,13 @@ except ImportError:
 
 
 class CameraController(threading.Thread):
+    """Camera controller class."""
 
     def __init__(self, logger, config):
+        """Initialise camera controller.
+        :param logger: logger object
+        :param config: config object
+        """
         threading.Thread.__init__(self)
         self._stop_event = threading.Event()
         self.cancelled = False
@@ -79,6 +85,9 @@ class CameraController(threading.Thread):
 
     # Main routine
     def run(self):
+        """Run camera controller.
+        :return: None
+        """
         while not self.is_stopped():
             try:
                 if picamera is not None:
@@ -92,7 +101,7 @@ class CameraController(threading.Thread):
                             self.logger.warning(
                                 "CameraController: got empty image.")
                         time.sleep(0.01)
-                    except Exception as error:
+                    except Exception as error:  # pylint: disable=broad-except
                         self.logger.error(
                             "CameraController: picamera update error.")
                         self.logger.exception(error)
@@ -101,7 +110,7 @@ class CameraController(threading.Thread):
 
                 else:
                     try:
-                    # Get image from webcam
+                        # Get image from webcam
                         _, self.raw_image = self.capture.read()
                         if self.raw_image is None:
                             self.logger.warning(
@@ -114,7 +123,7 @@ class CameraController(threading.Thread):
                             )
                         time.sleep(0.01)
 
-                    except Exception as error:
+                    except (cv2.error, Exception) as error:  # pylint: disable=broad-except
                         self.logger.error(
                             "CameraController: webcam update error.")
                         self.logger.exception(error)
@@ -130,6 +139,9 @@ class CameraController(threading.Thread):
 
     # Stop thread
     def stop(self):
+        """Stop thread.
+        :return: None
+        """
         self._stop_event.set()
 
         if picamera is not None:
@@ -146,23 +158,40 @@ class CameraController(threading.Thread):
 
     # Check if thread is stopped
     def is_stopped(self):
+        """Check if thread is stopped.
+        :return: True if thread is stopped, False otherwise.
+        """
         return self._stop_event.is_set()
 
     # Get MD image
     def get_md_image(self):
+        """Get MD image.
+        :return: MD image or None if no image is available.
+        """
         if self.image is not None:
             return self.image.copy()
+        return None
 
     # Get MD image in binary jpeg encoding format
     def get_image_binary(self):
+        """Get MD image in binary jpeg encoding format.
+        :return: MD image in binary jpeg encoding format
+        """
         _, buf = cv2.imencode(".jpg", self.get_md_image())
         return buf
 
     def get_video_stream(self):
+        """Get video stream.
+        :return: video stream or None if no video stream is available.
+        """
         if picamera is not None:
             return self.picamera_video_stream
+        return None
 
     def start_video_stream(self):
+        """Start video stream.
+        :return: None
+        """
         if picamera is not None:
             self.picamera_video_stream.clear()
             self.camera.start_recording(
@@ -173,17 +202,27 @@ class CameraController(threading.Thread):
             self.logger.debug('CameraController: recording started')
 
     def stop_video_stream(self):
+        """Stop video stream.
+        :return: None
+        """
         if picamera is not None:
             self.camera.stop_recording()
             self.logger.debug('CameraController: recording stopped')
 
     def wait_recording(self, delay):
+        """Wait recording.
+        :param delay: delay
+        :return: None
+        """
         if picamera is not None:
             return self.camera.wait_recording(delay)
         return None
 
     # TODO: Not used?
     def get_thumb_image(self):
+        """Get thumbnail image.
+        :return: thumbnail image
+        """
         self.logger.debug("CameraController: lores image requested.")
         if picamera is not None:
             return self.get_image_binary()
@@ -191,6 +230,9 @@ class CameraController(threading.Thread):
 
     # Get high res image
     def get_hires_image(self):
+        """Get high resolution image.
+        :return: high resolution image
+        """
         self.logger.debug("CameraController: hires image requested.")
         if picamera is not None:
             # TODO: understand the decode.
@@ -210,17 +252,20 @@ class CameraController(threading.Thread):
                 return decoded_image.copy()
             return None
 
-        else:
-            _, raw_image = self.capture.read()
-            if raw_image is None:
-                self.logger.error(
-                    "CameraController: webcam returned empty hires image.")
-                return None
-            return raw_image.copy()
+        # By default, get image from webcam
+        _, raw_image = self.capture.read()
+        if raw_image is None:
+            self.logger.error(
+                "CameraController: webcam returned empty hires image.")
+            return None
+        return raw_image.copy()
 
     # Initialise picamera. If already started, close and reinitialise.
     # TODO - reset with manual exposure, if it was set before.
     def initialise_picamera(self):
+        """Initialise picamera.
+        :return: None
+        """
         self.logger.debug('CameraController: initialising picamera...')
 
         # If there is already a running instance, close it
@@ -293,6 +338,9 @@ class CameraController(threading.Thread):
 
     # initialise webcam
     def initialise_webcam(self):
+        """Initialise webcam.
+        :return: None
+        """
         if self.capture is not None:
             self.capture.release()
 
@@ -308,6 +356,10 @@ class CameraController(threading.Thread):
 
     # Set camera rotation
     def set_camera_rotation(self, rotation):
+        """Set camera rotation.
+        :param rotation: rotation
+        :return: None
+        """
         # Only change the configuration when the camera rotation change
         if self.rotated_camera == rotation:
             return
@@ -333,6 +385,11 @@ class CameraController(threading.Thread):
 
     # Set picamera exposure
     def set_exposure(self, shutter_speed, iso):
+        """Set picamera exposure.
+        :param shutter_speed: shutter speed
+        :param iso: iso
+        :return: None
+        """
         if picamera is not None:
             self.camera.iso = iso
             time.sleep(0.5)
@@ -348,16 +405,25 @@ class CameraController(threading.Thread):
             self.exposure_mode = 'off'
 
     def get_exposure_mode(self):
+        """Get exposure mode.
+        :return: exposure mode
+        """
         if picamera is not None:
             return self.camera.exposure_mode
         return self.exposure_mode
 
     def get_iso(self):
+        """Get camera iso.
+        :return: iso
+        """
         if picamera is not None:
             return self.camera.iso
         return self.iso
 
     def get_shutter_speed(self):
+        """Get camera shutter speed.
+        :return: shutter speed
+        """
         if picamera is not None:
             return self.camera.shutter_speed
         return self.shutter_speed
@@ -379,7 +445,13 @@ class CameraController(threading.Thread):
 
     @staticmethod
     def update_config(new_config, config_path):
+        """Update config.
+        :param new_config: new config
+        :param config_path: config path
+        :return: new config
+        """
         contents = json.dumps(
             new_config, sort_keys=True, indent=4, separators=(',', ': '))
-        open(config_path, 'w', encoding='utf-8').write(contents)
+        with open(config_path, 'w', encoding='utf-8') as config_file:
+            config_file.write(contents)
         return new_config

@@ -1,3 +1,4 @@
+"""Change detector module for the camera server."""
 import logging
 import time
 from datetime import datetime
@@ -11,9 +12,15 @@ from naturewatch_camera_server.file_saver import FileSaver
 
 
 class ChangeDetector(Thread):
+    """Change detector class."""
 
     def __init__(self, camera_controller, config, logger):
-        super(ChangeDetector, self).__init__()
+        """Initialise change detector.
+        :param camera_controller: Camera controller object
+        :param config: Configuration dictionary
+        :param logger: Logger object
+        """
+        super().__init__()
         self.config = config
         self.daemon = True
         self.cancelled = False
@@ -58,7 +65,7 @@ class ChangeDetector(Thread):
         while not self.cancelled:
             try:
                 self.update()
-            except Exception as error:
+            except Exception as error:  # pylint: disable=broad-except
                 self.logger.exception(error)
 
     def cancel(self):
@@ -138,33 +145,51 @@ class ChangeDetector(Thread):
         """
         if not contours:
             return None
-        else:
-            areas = [cv2.contourArea(c) for c in contours]
-            return contours[np.argmax(areas)]
+
+        # Find the largest contour
+        areas = [cv2.contourArea(c) for c in contours]
+        return contours[np.argmax(areas)]
 
     def set_sensitivity(self, min_width, max_width):
+        """Set the sensitivity of the change detector.
+        :param min_width: minimum width of the change
+        :param max_width: maximum width of the change
+        :return: none
+        """
         self.max_height = max_width
         self.min_height = min_width
         self.max_width = max_width
         self.min_width = min_width
 
     def start_photo_session(self):
+        """Start a photo session.
+        :return: none
+        """
         self.logger.info('ChangeDetector: starting photo capture')
         self.mode = "photo"
         self.session_start_time = self.get_fake_time()
 
     def start_video_session(self):
+        """Start a video session.
+        :return: none
+        """
         self.logger.info('ChangeDetector: starting video capture')
         self.mode = "video"
         self.camera_controller.start_video_stream()
         self.session_start_time = self.get_fake_time()
 
     def start_timelapse_session(self):
+        """Start a timelapse session.
+        :return: none
+        """
         self.logger.info('ChangeDetector: starting timelapse capture')
         self.mode = "timelapse"
         self.session_start_time = self.get_fake_time()
 
     def stop_session(self):
+        """Stop a session.
+        :return: none
+        """
         self.logger.info('ChangeDetector: ending capture')
         if self.mode == "video":
             self.camera_controller.stop_video_stream()
@@ -180,6 +205,9 @@ class ChangeDetector(Thread):
     # In case photo is requested, the video port can be used, but need not.
     # It should be left a matter of configuration
     def update(self):
+        """Update the change detector.
+        :return: none
+        """
         time.sleep(0.02)
         # only check for motion while a session is active
         if self.mode in ["photo", "video"]:
@@ -221,12 +249,12 @@ class ChangeDetector(Thread):
 
                         self.last_photo_time = self.get_fake_time()
                         self.logger.debug("ChangeDetector: video timer reset")
-                    else:
-                        # TODO: Add debug code that logs a line
-                        # every x seconds so we can see the ChangeDetector
-                        # is still alive:
-                        # self.logger.debug("ChangeDetector: idle")
-                        pass
+                    # else:
+                    #     # TODO: Add debug code that logs a line
+                    #     # every x seconds so we can see the ChangeDetector
+                    #     # is still alive:
+                    #     # self.logger.debug("ChangeDetector: idle")
+                    #     pass
             else:
                 self.logger.error("ChangeDetector: not receiving any images "
                                   "for motion detection!")
@@ -252,10 +280,16 @@ class ChangeDetector(Thread):
                 self.logger.info("ChangeDetector: photo capture completed")
 
     def get_fake_time(self):
+        """Get the fake time.
+        :return: the fake time
+        """
         if self.device_time is None:
             return time.time()
         return self.device_time + time.time() - self.device_time_start
 
     def get_formatted_time(self):
+        """Get the formatted time.
+        :return: the formatted time
+        """
         current_time = datetime.utcfromtimestamp(self.get_fake_time())
         return current_time.strftime('%Y-%m-%d-%H-%M-%S')

@@ -16,6 +16,39 @@ from naturewatch_camera_server.file_saver import FileSaver
 from naturewatch_camera_server.static_page import static_page
 
 
+def extract_config(app):
+    """Extract config from config.json file.
+    :param app: Flask app object
+    :return: Flask app object, module path, camera log path
+    """
+   # Retrieve module path
+    module_path = os.path.abspath(os.path.dirname(__file__))
+    app.logger.info("Module path: %s", module_path)
+
+    # Load configuration json
+    # load central config file first
+    config_path = os.path.join(module_path, "config.json")
+    with open(config_path, encoding='utf-8') as json_file:
+        app.user_config = json.load(json_file)
+
+    data_path = app.user_config["data_path"]
+    user_config_path = os.path.join(module_path, data_path, 'config.json')
+    camera_log_path = os.path.join(module_path, data_path, 'camera.log')
+
+    # Check if a config file exists in data directory
+    if os.path.isfile(user_config_path):
+        # if yes, load that file, too
+        app.logger.info("Using config file from data context")
+        with open(user_config_path, encoding='utf-8') as json_file:
+            app.user_config = json.load(json_file)
+    else:
+        # if not, copy central config file to data directory
+        app.logger.warning("Config file does not exist within the data "
+                           "context, copying file")
+        copyfile(config_path, user_config_path)
+    return app, module_path, camera_log_path
+
+
 def create_app():
     """
     Create flask app
@@ -36,29 +69,8 @@ def create_app():
     stderr_handler.setLevel(logging.INFO)
     flask_app.logger.addHandler(stderr_handler)
 
-    # Retrieve module path
-    module_path = os.path.abspath(os.path.dirname(__file__))
-    flask_app.logger.info("Module path: %s", module_path)
-
-    # Load configuration json
-    # load central config file first
-    config_path = os.path.join(module_path, "config.json")
-    flask_app.user_config = json.load(open(config_path, encoding='utf-8'))
-
-    data_path = flask_app.user_config["data_path"]
-    user_config_path = os.path.join(module_path, data_path, 'config.json')
-    camera_log_path = os.path.join(module_path, data_path, 'camera.log')
-
-    # Check if a config file exists in data directory
-    if os.path.isfile(user_config_path):
-        # if yes, load that file, too
-        flask_app.logger.info("Using config file from data context")
-        flask_app.user_config = json.load(open(user_config_path, encoding='utf-8'))
-    else:
-        # if not, copy central config file to data directory
-        flask_app.logger.warning("Config file does not exist within the data "
-                                 "context, copying file")
-        copyfile(config_path, user_config_path)
+    # Load config file
+    flask_app, module_path, camera_log_path = extract_config(flask_app)
 
     # Set up logging to file
     file_handler = logging.handlers.RotatingFileHandler(
