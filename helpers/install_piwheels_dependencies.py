@@ -75,24 +75,38 @@ def find_newest_compatible_wheels(
     return latest_compatible_release, merged_dependencies
 
 
-def generate_apt_get_command(packages: list[str]):
-    """Generate the apt-get command to install the dependencies."""
+def generate_apt_get_command(packages: list[str]) -> list[str]:
+    """Generate the apt-get command to install the dependencies.
+
+    Args:
+        packages (list[str]): The list of dependencies to install.
+
+    Returns:
+        list[str]: The apt-get command to run.
+    """
     return ['apt-get', 'install'] + packages + ['--ignore-missing', '-y']
 
 
 def run_command(command_list: list):
-    """ Run the command and directly output to the console. """
-    process = subprocess.Popen(command_list, stdout=subprocess.PIPE)
-    while True:
-        output = process.stdout.readline()
-        if output == b'' and process.poll() is not None:
-            break
-        if output:
-            charset = locale.getdefaultlocale()[1]
-            if charset is None:
-                charset = 'utf-8'
-            print(output.decode(charset), end='')
-    return process.poll()
+    """ Run the command and directly output to the console.
+
+    Args:
+        command_list (list): The command to run.
+
+    Returns:
+        int: The return code of the command.
+    """
+    with subprocess.Popen(command_list, stdout=subprocess.PIPE) as process:
+        while True:
+            output = process.stdout.readline()
+            if output == b'' and process.poll() is not None:
+                break
+            if output:
+                charset = locale.getdefaultlocale()[1]
+                if charset is None:
+                    charset = 'utf-8'
+                print(output.decode(charset), end='')
+        return process.poll()
 
 
 if __name__ == '__main__':
