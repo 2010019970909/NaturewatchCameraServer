@@ -115,7 +115,9 @@ def settings_handler():
 
         if "timelapse" in settings:
             current_app.logger.info(
-                "Changing timelapse settings to " + str(settings["timelapse"]))
+                "Changing timelapse settings to %s seconds.",
+                settings["timelapse"]
+            )
             current_app.change_detector.timelapse_active = settings[
                 "timelapse"]["active"]
             current_app.change_detector.timelapse = settings[
@@ -186,14 +188,7 @@ def start_session_handler(session_type):
     Start session of type photo or video
     :return: session status json object
     """
-    if session_type == "photo":
-        current_app.change_detector.start_photo_session()
-
-    elif session_type == "video":
-        current_app.change_detector.start_video_session()
-
-    elif session_type == "timelapse":
-        current_app.change_detector.start_timelapse_session()
+    current_app.change_detector.start_session(session_type)
 
     session_status = {
         "mode": current_app.change_detector.mode,

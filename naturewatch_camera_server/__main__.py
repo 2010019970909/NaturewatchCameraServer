@@ -1,10 +1,11 @@
+# import os
 import argparse
 # import subprocess
 import traceback
 
 from naturewatch_camera_server import create_app, create_error_app
 
-# Todo: intantiate the logger here, so that it can be used here and in the app.
+# TODO: instantiate the logger here, so that it can be used here and in the app.
 # probably need to pass it to the app and to fetch the config for the log file path.
 parser = argparse.ArgumentParser(
     description='Launch My Naturewatch Camera'
@@ -19,16 +20,16 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-class CameraNotFoundException(Exception):
-    """Exception raised when the camera is not found."""
+# class CameraNotFoundException(Exception):
+#     """Exception raised when the camera is not found."""
 
-    def __init__(self, message="Camera not found"):
-        """Initialize the exception.
-        :param message: The error message.
-        :type message: str
-        """
-        self.message = message
-        super().__init__(self.message)
+#     def __init__(self, message="Camera not found"):
+#         """Initialize the exception.
+#         :param message: The error message.
+#         :type message: str
+#         """
+#         self.message = message
+#         super().__init__(self.message)
 
 
 # def is_camera_enabled():
@@ -51,6 +52,8 @@ if __name__ == '__main__':
         app.camera_controller.start()
         app.change_detector.start()
 
+    # VS: I understand why this is here, but I'm not sure
+    # it's the best solution.
     except Exception as error:
         # if "Camera is not enabled" in str(error):
         # This error message appears even if the camera _is_ enabled, but the camera is not found.
