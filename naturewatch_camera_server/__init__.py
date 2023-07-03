@@ -114,6 +114,7 @@ def create_app():
             "Videos directory does not exist, creating path")
 
     # Instantiate classes
+    # Camera controller is only used in the ChangeDetector class
     flask_app.camera_controller = CameraController(
         flask_app.logger, flask_app.user_config)
     flask_app.logger.debug("Instantiating classes...")
