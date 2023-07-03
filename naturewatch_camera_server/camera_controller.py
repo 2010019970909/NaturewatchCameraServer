@@ -47,16 +47,12 @@ class CameraController(threading.Thread):
         self.md_width = self.config["md_width"]
         self.md_height = self.md_width * self.height // self.width
 
-        # TODO: this parameter should only be required in case of photo-mode
-        # self.use_video_port = self.config["use_video_port"]
-
-        # For motion detection
-        self.picamera_motion_detection_output = None
-        self.picamera_motion_detection_stream = None
-
         # For video
-        self.picamera_video_stream = None
-        self.video_bitrate = 10000000
+        # self.picamera_video_stream = None
+        self.camera_output = picamera2.outputs.CircularOutput(
+            buffersize=self.config.get("circular_output_buffer_size", 300)
+        )
+        self.camera_encoder = picamera2.encoders.H264Encoder(10000000)
 
         self.camera = None
         self.rotated_camera = False
@@ -86,20 +82,11 @@ class CameraController(threading.Thread):
         """Run camera controller.
         :return: None
         """
-        # capture_config = self.camera.create_still_configuration()
-
         while not self.is_stopped():
             try:
                 if picamera2 is not None:
                     try:
                         # Get image from Pi camera
-                        # self.picamera_motion_detection_output.truncate(0)
-                        # self.picamera_motion_detection_output.seek(0)
-                        # next(self.picamera_motion_detection_stream)
-                        # self.image = self.camera.switch_mode_and_capture_array(
-                        #     capture_config,
-                        # )
-                        # self.image = self.camera.capture_array('lores')
                         self.image = self.camera.capture_array('main')
 
                         if self.image is None:
@@ -152,8 +139,6 @@ class CameraController(threading.Thread):
 
         if picamera2 is not None:
             # Close pi camera
-            self.picamera_motion_detection_output.truncate(0)
-            self.picamera_motion_detection_output.seek(0)
             self.camera.close()
             self.camera = None
         else:
@@ -186,13 +171,13 @@ class CameraController(threading.Thread):
         """
         return cv2.imencode(".jpg", self.get_md_image())[1]
 
-    def get_video_stream(self):
-        """Get video stream.
-        :return: video stream or None if no video stream is available.
-        """
-        if picamera2 is not None:
-            return self.picamera_video_stream
-        return None
+    # def get_video_stream(self):
+    #     """Get video stream.
+    #     :return: video stream or None if no video stream is available.
+    #     """
+    #     if picamera2 is not None:
+    #         return self.picamera_video_stream
+    #     return None
 
     def start_video_stream(self):
         """Start video stream.
@@ -316,7 +301,9 @@ class CameraController(threading.Thread):
         self.camera.configure(config)
         # self.camera.set_controls({"ExposureTime": 10000, "AnalogueGain": 1.0})
 
-        self.camera.start()
+        self.camera.start_recording(
+            self.camera_encoder, self.camera_output)
+        # self.camera.start()
 
         # capture an image
         # save an image to ~/test.jpg
@@ -328,19 +315,6 @@ class CameraController(threading.Thread):
         #     f'{self.camera.framerate}'
         # )
 
-        # TODO: use correct port fitting the requested resolution
-        # Set up low res stream for motion detection
-        # self.picamera_motion_detection_output = picamera2.array.PiRGBArray(
-        #     self.camera,
-        #     size=(self.md_width, self.md_height),
-        # )
-        # self.picamera_motion_detection_stream = self.camera.capture_continuous(
-        #     self.picamera_motion_detection_output,
-        #     format="bgr",
-        #     use_video_port=True,
-        #     splitter_port=2,
-        #     resize=(self.md_width, self.md_height),
-        # )
         # self.logger.debug(
         #     'CameraController: low resolution stream prepared with resolution'
         #     f': {self.md_width}×{self.md_height}.'
@@ -354,14 +328,6 @@ class CameraController(threading.Thread):
         # so the effective duration can not be predicted well
         # stream_duration = self.config["video_duration_before_motion"]
         # stream_duration += self.config["video_duration_after_motion"]
-
-        # self.picamera_video_stream = picamera2.CircularIO(
-        #     self.camera,
-        #     bitrate=self.video_bitrate,
-        #     seconds=stream_duration)
-
-        # self.logger.debug(
-        #     'CameraController: circular stream prepared for video.')
 
         time.sleep(2)
 

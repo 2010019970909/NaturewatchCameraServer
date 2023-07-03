@@ -230,12 +230,24 @@ class ChangeDetector(Thread):
                         self.logger.info(
                             "ChangeDetector: video capture completed")
 
-                        # Save video
-                        with self.camera_controller.get_video_stream().lock:
-                            self.file_saver.save_video(
-                                self.camera_controller.get_video_stream(),
-                                timestamp,
-                            )
+                        # Now when it's time to start recording the output,
+                        # including the previous x seconds:
+                        filename = f"{timestamp}.h264"
+                        # filename_mp4 = f"{timestamp}.mp4"
+                        import os
+                        input_video = os.path.join(
+                            self.config["videos_path"], filename)
+
+                        self.camera_controller.camera_output.fileoutput = filename = f"{timestamp}.h264"
+                        self.camera_controller.camera_output.start()
+                        time.sleep(5)
+                        self.camera_controller.camera_output.stop()
+                        # Save video ...
+                        # with self.camera_controller.get_video_stream().lock:
+                        #     self.file_saver.save_video(
+                        #         self.camera_controller.get_video_stream(),
+                        #         timestamp,
+                        #     )
 
                         self.last_capture_time = self.get_fake_time()
                         self.logger.debug("ChangeDetector: video timer reset")
