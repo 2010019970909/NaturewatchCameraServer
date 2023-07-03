@@ -77,22 +77,6 @@ class ChangeDetector(Thread):
         self.cancelled = True
         self.camera_controller.stop()
 
-    # @staticmethod
-    # def save_photo(image):
-    #     """
-    #     Save numpy image to a jpg file
-    #     :param image: numpy array image
-    #     :return: none
-    #     """
-    #     timestamp = datetime.datetime.now()
-    #     filename = f"{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}.jpg"
-
-    #     try:
-    #         cv2.imwrite(f"photos/{filename}", image)
-    #     except Exception as error:
-    #         self.logger.error('ChangeDetector: save_photo() error: ')
-    #         self.logger.exception(error)
-
     def detect_change_contours(self, img):
         """
         Detect changed contours in frame
@@ -187,10 +171,10 @@ class ChangeDetector(Thread):
         :return: none
         """
         self.logger.info('ChangeDetector: ending capture')
+
         if self.mode == "video":
             self.camera_controller.stop_video_stream()
-        # Not useful
-        # elif self.mode == "photo" or self.mode == "timelapse":
+
         self.mode = "inactive"
 
     # TODO: whether to use the video-port or not does not directly
