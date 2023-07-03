@@ -57,7 +57,7 @@ class FileSaver(Thread):
         try:
             path = os.path.join(self.config["photos_path"], filename)
             cv2.imwrite(path, image)
-            self.logger.info(f"FileSaver: saved file to {path}")
+            self.logger.info("FileSaver: saved file to %s", path)
             return filename
 
         except cv2.error as error:
@@ -89,7 +89,7 @@ class FileSaver(Thread):
                 path = os.path.join(self.config["videos_path"], filename)
 
             cv2.imwrite(path, image)
-            self.logger.info("FileSaver: saved thumbnail to {path}")
+            self.logger.info("FileSaver: saved thumbnail to %s", path)
             return filename
 
         except cv2.error as error:

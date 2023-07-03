@@ -251,3 +251,4 @@ yarn-lock.json
 yarn.lock
 *.zip
 .vscode/
+naturewatch_camera_server/static/data/*.log*

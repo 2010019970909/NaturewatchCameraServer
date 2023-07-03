@@ -54,7 +54,7 @@ class ChangeDetector(Thread):
         self.current_image = None
 
         self.timelapse_active = False
-        self.timelapse_interval = self.config["timelapse"]
+        self.timelapse_interval = self.config.get('timelapse_interval_s', 30)
 
         self.logger.info("ChangeDetector: initialised")
 

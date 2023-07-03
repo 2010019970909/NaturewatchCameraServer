@@ -12,6 +12,7 @@ import numpy as np
 
 try:
     import picamera2
+    import libcamera
     # import picamera.array
 except ImportError:
     # well, picamera2 should be compatible with
@@ -47,11 +48,11 @@ class CameraController(threading.Thread):
         self.md_height = self.md_width * self.height // self.width
 
         # TODO: this parameter should only be required in case of photo-mode
-        self.use_video_port = self.config["use_video_port"]
+        # self.use_video_port = self.config["use_video_port"]
 
         # For motion detection
-        self.picamera_md_output = None
-        self.picamera_md_stream = None
+        self.picamera_motion_detection_output = None
+        self.picamera_motion_detection_stream = None
 
         # For video
         self.picamera_video_stream = None
@@ -66,13 +67,13 @@ class CameraController(threading.Thread):
         self.exposure_mode = None
 
         if picamera2 is not None:
-            # Use pi camera
-            self.logger.info("CameraController: picamera module exists.")
-            self.initialise_picamera()
+            # Use picamera2
+            self.logger.info("CameraController: picamera2 module exists.")
+            self.initialise_picamera2()
         else:
-            # Use webcam
+            # Use webcam (OpenCV)
             self.logger.info(
-                "CameraController: picamera module not found. "
+                "CameraController: picamera2 module not found. "
                 "Using OpenCV VideoCapture instead."
             )
             self.capture = None
@@ -86,24 +87,32 @@ class CameraController(threading.Thread):
         """Run camera controller.
         :return: None
         """
+        # capture_config = self.camera.create_still_configuration()
+
         while not self.is_stopped():
             try:
                 if picamera2 is not None:
                     try:
                         # Get image from Pi camera
-                        self.picamera_md_output.truncate(0)
-                        self.picamera_md_output.seek(0)
-                        next(self.picamera_md_stream)
-                        self.image = self.picamera_md_output.array
+                        # self.picamera_motion_detection_output.truncate(0)
+                        # self.picamera_motion_detection_output.seek(0)
+                        # next(self.picamera_motion_detection_stream)
+                        # self.image = self.camera.switch_mode_and_capture_array(
+                        #     capture_config,
+                        # )
+                        # self.image = self.camera.capture_array('lores')
+                        self.image = self.camera.capture_array('main')
+
                         if self.image is None:
                             self.logger.warning(
                                 "CameraController: got empty image.")
                         time.sleep(0.01)
+
                     except Exception as error:  # pylint: disable=broad-except
                         self.logger.error(
-                            "CameraController: picamera update error.")
+                            "CameraController: picamera2 update error.")
                         self.logger.exception(error)
-                        self.initialise_picamera()
+                        self.initialise_picamera2()
                         time.sleep(0.02)
 
                 else:
@@ -144,8 +153,8 @@ class CameraController(threading.Thread):
 
         if picamera2 is not None:
             # Close pi camera
-            self.picamera_md_output.truncate(0)
-            self.picamera_md_output.seek(0)
+            self.picamera_motion_detection_output.truncate(0)
+            self.picamera_motion_detection_output.seek(0)
             self.camera.close()
             self.camera = None
         else:
@@ -175,8 +184,8 @@ class CameraController(threading.Thread):
         """Get MD image in binary jpeg encoding format.
         :return: MD image in binary jpeg encoding format
         """
-        _, buf = cv2.imencode(".jpg", self.get_md_image())
-        return buf
+        image = cv2.cvtColor(self.get_md_image(), cv2.COLOR_BGR2RGB)
+        return cv2.imencode(".jpg", image)[1]
 
     def get_video_stream(self):
         """Get video stream.
@@ -233,23 +242,25 @@ class CameraController(threading.Thread):
         """
         self.logger.debug("CameraController: hires image requested.")
         if picamera2 is not None:
-            # TODO: understand the decode.
-            # Is another more intuitive way possible?
-            # Decode image directly from the stream's
-            # buffer
-            # stream = io.BytesIO()
-            # self.camera.capture(
-            #     stream,
-            #     format='jpeg',
-            #     use_video_port=self.use_video_port,
-            # )
-            # stream.seek(0)
             # # "Decode" the image from the stream, preserving colour
             # decoded_image = cv2.imdecode(np.fromstring(
             #     stream.getvalue(), dtype=np.uint8), 1)
 
             # if decoded_image is not None:
             #     return decoded_image.copy()
+            # return None
+            # TODO
+            capture_config = self.camera.create_still_configuration()
+
+            image_array = self.camera.switch_mode_and_capture_array(
+                capture_config,
+            )
+
+            # image_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
+
+            if image_array is not None:
+                return image_array.copy()
+
             return None
 
         # By default, get image from webcam
@@ -262,7 +273,7 @@ class CameraController(threading.Thread):
 
     # Initialise picamera. If already started, close and reinitialise.
     # TODO - reset with manual exposure, if it was set before.
-    def initialise_picamera(self):
+    def initialise_picamera2(self):
         """Initialise picamera.
         :return: None
         """
@@ -274,31 +285,49 @@ class CameraController(threading.Thread):
 
         # Create a new instance
         self.camera = picamera2.Picamera2()
-        # print('\n'.join(dir(self.camera)))
 
-        # Check for module revision
-        # TODO: set maximum resolution based on module revision
-        self.logger.debug(
-            'CameraController: camera detected:\n'
-            f'\tsensor format: {self.camera.sensor_format}'
-            f'\tsensor modes: {self.camera.sensor_modes}'
-            f'\tsensor resolution: {self.camera.sensor_resolution}'
-        )
+        # self.logger.debug(
+        #     'CameraController: camera detected:\n'
+        #     f'\tsensor format: {self.camera.sensor_format}'
+        #     f'\tsensor modes: {self.camera.sensor_modes}'
+        #     f'\tsensor resolution: {self.camera.sensor_resolution}'
+        # )
 
         # Set camera parameters
         # TODO: configure
         # self.camera.framerate = self.config["frame_rate"]
         # self.camera.resolution = (self.width, self.height)
 
-        # TODO: configure
-        # picamera2.Picamera2.CAPTURE_TIMEOUT = 60
-
         # self.camera.rotation = 0
         self.rotated_camera = False
+        camera_transform = libcamera.Transform()
 
         if self.config["rotate_camera"] == 1:
             # self.camera.rotation = 180
             self.rotated_camera = True
+            camera_transform = libcamera.Transform(hflip=True, vflip=True)
+
+        # print(self.camera.sensor_modes)
+        config = self.camera.create_video_configuration(
+            transform=camera_transform,
+            buffer_count=self.config.get('camera_buffer_count', 8),
+            queue=self.config.get('camera_queue', True),
+            encode=self.config.get('camera_encode', 'lores'),
+            lores=self.config.get('camera_lores', {"size": (1920, 1080)}),
+            main=self.config.get('camera_main', {"size": (2028, 1520)}),
+        )
+
+        # Ensure the resolution are chosen optimally
+        config = self.camera.align_configuration(config)
+
+        self.camera.configure(config)
+        # self.camera.set_controls({"ExposureTime": 10000, "AnalogueGain": 1.0})
+
+        self.camera.start()
+
+        # capture an image
+        # save an image to ~/test.jpg
+        # self.camera.capture_file('test.jpg', 'main')
 
         # self.logger.info(
         #     'CameraController: camera initialised with a resolution of '
@@ -308,21 +337,21 @@ class CameraController(threading.Thread):
 
         # TODO: use correct port fitting the requested resolution
         # Set up low res stream for motion detection
-        self.picamera_md_output = picamera2.array.PiRGBArray(
-            self.camera,
-            size=(self.md_width, self.md_height),
-        )
-        self.picamera_md_stream = self.camera.capture_continuous(
-            self.picamera_md_output,
-            format="bgr",
-            use_video_port=True,
-            splitter_port=2,
-            resize=(self.md_width, self.md_height),
-        )
-        self.logger.debug(
-            'CameraController: low resolution stream prepared with resolution'
-            f': {self.md_width}×{self.md_height}.'
-        )
+        # self.picamera_motion_detection_output = picamera2.array.PiRGBArray(
+        #     self.camera,
+        #     size=(self.md_width, self.md_height),
+        # )
+        # self.picamera_motion_detection_stream = self.camera.capture_continuous(
+        #     self.picamera_motion_detection_output,
+        #     format="bgr",
+        #     use_video_port=True,
+        #     splitter_port=2,
+        #     resize=(self.md_width, self.md_height),
+        # )
+        # self.logger.debug(
+        #     'CameraController: low resolution stream prepared with resolution'
+        #     f': {self.md_width}×{self.md_height}.'
+        # )
 
         # Set up high resolution stream for actual recording
         # Bitrate has to be specified so size can be calculated
@@ -330,16 +359,16 @@ class CameraController(threading.Thread):
         # Unfortunately the effective bitrate depends
         # on the quality-parameter specified with start_recording,
         # so the effective duration can not be predicted well
-        stream_duration = self.config["video_duration_before_motion"]
-        stream_duration += self.config["video_duration_after_motion"]
+        # stream_duration = self.config["video_duration_before_motion"]
+        # stream_duration += self.config["video_duration_after_motion"]
 
-        self.picamera_video_stream = picamera.PiCameraCircularIO(
-            self.camera,
-            bitrate=self.video_bitrate,
-            seconds=stream_duration)
+        # self.picamera_video_stream = picamera2.CircularIO(
+        #     self.camera,
+        #     bitrate=self.video_bitrate,
+        #     seconds=stream_duration)
 
-        self.logger.debug(
-            'CameraController: circular stream prepared for video.')
+        # self.logger.debug(
+        #     'CameraController: circular stream prepared for video.')
 
         time.sleep(2)
 
@@ -417,7 +446,8 @@ class CameraController(threading.Thread):
         :return: exposure mode
         """
         if picamera2 is not None:
-            return self.camera.exposure_mode
+            print(f'{self.camera.controls}')
+            return 'off'
         return self.exposure_mode
 
     def get_iso(self):
