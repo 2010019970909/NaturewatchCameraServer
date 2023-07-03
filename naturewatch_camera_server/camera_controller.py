@@ -11,10 +11,12 @@ import imutils
 import numpy as np
 
 try:
-    import picamera
-    import picamera.array
+    import picamera2
+    # import picamera.array
 except ImportError:
-    picamera = None
+    # well, picamera2 should be compatible with
+    # USB cameras... so IDK
+    picamera2 = None
 
 
 class CameraController(threading.Thread):
@@ -47,9 +49,6 @@ class CameraController(threading.Thread):
         # TODO: this parameter should only be required in case of photo-mode
         self.use_video_port = self.config["use_video_port"]
 
-        # For photos
-        self.picamera_photo_stream = None
-
         # For motion detection
         self.picamera_md_output = None
         self.picamera_md_stream = None
@@ -65,9 +64,8 @@ class CameraController(threading.Thread):
         self.iso = None
         self.shutter_speed = None
         self.exposure_mode = None
-        self.raw_image = None
 
-        if picamera is not None:
+        if picamera2 is not None:
             # Use pi camera
             self.logger.info("CameraController: picamera module exists.")
             self.initialise_picamera()
@@ -90,7 +88,7 @@ class CameraController(threading.Thread):
         """
         while not self.is_stopped():
             try:
-                if picamera is not None:
+                if picamera2 is not None:
                     try:
                         # Get image from Pi camera
                         self.picamera_md_output.truncate(0)
@@ -110,20 +108,20 @@ class CameraController(threading.Thread):
 
                 else:
                     try:
-                        # Get image from webcam
-                        _, self.raw_image = self.capture.read()
-                        if self.raw_image is None:
+                        # Get image from webcam (OpenCV)
+                        _, frame = self.capture.read()
+                        if frame is None:
                             self.logger.warning(
                                 "CameraController: got empty webcam image.")
                         else:
                             self.image = imutils.resize(
-                                self.raw_image,
+                                frame,
                                 width=self.md_width,
                                 height=self.md_height
                             )
                         time.sleep(0.01)
 
-                    except (cv2.error, Exception) as error:  # pylint: disable=broad-except
+                    except cv2.error as error:
                         self.logger.error(
                             "CameraController: webcam update error.")
                         self.logger.exception(error)
@@ -144,7 +142,7 @@ class CameraController(threading.Thread):
         """
         self._stop_event.set()
 
-        if picamera is not None:
+        if picamera2 is not None:
             # Close pi camera
             self.picamera_md_output.truncate(0)
             self.picamera_md_output.seek(0)
@@ -184,7 +182,7 @@ class CameraController(threading.Thread):
         """Get video stream.
         :return: video stream or None if no video stream is available.
         """
-        if picamera is not None:
+        if picamera2 is not None:
             return self.picamera_video_stream
         return None
 
@@ -192,7 +190,7 @@ class CameraController(threading.Thread):
         """Start video stream.
         :return: None
         """
-        if picamera is not None:
+        if picamera2 is not None:
             self.picamera_video_stream.clear()
             self.camera.start_recording(
                 self.picamera_video_stream,
@@ -205,7 +203,7 @@ class CameraController(threading.Thread):
         """Stop video stream.
         :return: None
         """
-        if picamera is not None:
+        if picamera2 is not None:
             self.camera.stop_recording()
             self.logger.debug('CameraController: recording stopped')
 
@@ -214,7 +212,7 @@ class CameraController(threading.Thread):
         :param delay: delay
         :return: None
         """
-        if picamera is not None:
+        if picamera2 is not None:
             return self.camera.wait_recording(delay)
         return None
 
@@ -224,7 +222,7 @@ class CameraController(threading.Thread):
         :return: thumbnail image
         """
         self.logger.debug("CameraController: lores image requested.")
-        if picamera is not None:
+        if picamera2 is not None:
             return self.get_image_binary()
         return None
 
@@ -234,22 +232,24 @@ class CameraController(threading.Thread):
         :return: high resolution image
         """
         self.logger.debug("CameraController: hires image requested.")
-        if picamera is not None:
+        if picamera2 is not None:
             # TODO: understand the decode.
             # Is another more intuitive way possible?
-            self.picamera_photo_stream = io.BytesIO()
-            self.camera.capture(
-                self.picamera_photo_stream,
-                format='jpeg',
-                use_video_port=self.use_video_port,
-            )
-            self.picamera_photo_stream.seek(0)
-            # "Decode" the image from the stream, preserving colour
-            decoded_image = cv2.imdecode(np.fromstring(
-                self.picamera_photo_stream.getvalue(), dtype=np.uint8), 1)
+            # Decode image directly from the stream's
+            # buffer
+            # stream = io.BytesIO()
+            # self.camera.capture(
+            #     stream,
+            #     format='jpeg',
+            #     use_video_port=self.use_video_port,
+            # )
+            # stream.seek(0)
+            # # "Decode" the image from the stream, preserving colour
+            # decoded_image = cv2.imdecode(np.fromstring(
+            #     stream.getvalue(), dtype=np.uint8), 1)
 
-            if decoded_image is not None:
-                return decoded_image.copy()
+            # if decoded_image is not None:
+            #     return decoded_image.copy()
             return None
 
         # By default, get image from webcam
@@ -273,36 +273,42 @@ class CameraController(threading.Thread):
             self.camera.close()
 
         # Create a new instance
-        self.camera = picamera.PiCamera()
+        self.camera = picamera2.Picamera2()
+        # print('\n'.join(dir(self.camera)))
+
         # Check for module revision
         # TODO: set maximum resolution based on module revision
         self.logger.debug(
-            f'CameraController: camera module revision {self.camera.revision}'
-            ' detected.'
+            'CameraController: camera detected:\n'
+            f'\tsensor format: {self.camera.sensor_format}'
+            f'\tsensor modes: {self.camera.sensor_modes}'
+            f'\tsensor resolution: {self.camera.sensor_resolution}'
         )
 
         # Set camera parameters
-        self.camera.framerate = self.config["frame_rate"]
-        self.camera.resolution = (self.width, self.height)
+        # TODO: configure
+        # self.camera.framerate = self.config["frame_rate"]
+        # self.camera.resolution = (self.width, self.height)
 
-        picamera.PiCamera.CAPTURE_TIMEOUT = 60
+        # TODO: configure
+        # picamera2.Picamera2.CAPTURE_TIMEOUT = 60
 
-        self.camera.rotation = 0
+        # self.camera.rotation = 0
         self.rotated_camera = False
 
         if self.config["rotate_camera"] == 1:
-            self.camera.rotation = 180
+            # self.camera.rotation = 180
             self.rotated_camera = True
 
-        self.logger.info(
-            'CameraController: camera initialised with a resolution of '
-            f'{self.camera.resolution} and a framerate of '
-            f'{self.camera.framerate}'
-        )
+        # self.logger.info(
+        #     'CameraController: camera initialised with a resolution of '
+        #     f'{self.camera.resolution} and a framerate of '
+        #     f'{self.camera.framerate}'
+        # )
 
         # TODO: use correct port fitting the requested resolution
         # Set up low res stream for motion detection
-        self.picamera_md_output = picamera.array.PiRGBArray(
+        self.picamera_md_output = picamera2.array.PiRGBArray(
             self.camera,
             size=(self.md_width, self.md_height),
         )
@@ -331,6 +337,7 @@ class CameraController(threading.Thread):
             self.camera,
             bitrate=self.video_bitrate,
             seconds=stream_duration)
+
         self.logger.debug(
             'CameraController: circular stream prepared for video.')
 
@@ -370,13 +377,13 @@ class CameraController(threading.Thread):
             module_path, self.config["data_path"], 'config.json')
 
         if self.rotated_camera is True:
-            if picamera is not None:
+            if picamera2 is not None:
                 self.camera.rotation = 180
             new_config = self.config
             new_config["rotate_camera"] = 1
 
         else:
-            if picamera is not None:
+            if picamera2 is not None:
                 self.camera.rotation = 0
             new_config = self.config
             new_config["rotate_camera"] = 0
@@ -390,9 +397,9 @@ class CameraController(threading.Thread):
         :param iso: iso
         :return: None
         """
-        if picamera is not None:
+        if picamera2 is not None:
             self.camera.iso = iso
-            time.sleep(0.5)
+            time.sleep(0.5)  # it takes more time to set up the ISO
             self.camera.shutter_speed = shutter_speed
             self.camera.exposure_mode = 'off'
             gains = self.camera.awb_gains
@@ -400,6 +407,7 @@ class CameraController(threading.Thread):
             # Restore stored gains
             self.camera.awb_gains = gains
         else:
+            # Well, it serves no use
             self.iso = iso
             self.shutter_speed = shutter_speed
             self.exposure_mode = 'off'
@@ -408,7 +416,7 @@ class CameraController(threading.Thread):
         """Get exposure mode.
         :return: exposure mode
         """
-        if picamera is not None:
+        if picamera2 is not None:
             return self.camera.exposure_mode
         return self.exposure_mode
 
@@ -416,7 +424,7 @@ class CameraController(threading.Thread):
         """Get camera iso.
         :return: iso
         """
-        if picamera is not None:
+        if picamera2 is not None:
             return self.camera.iso
         return self.iso
 
@@ -424,7 +432,7 @@ class CameraController(threading.Thread):
         """Get camera shutter speed.
         :return: shutter speed
         """
-        if picamera is not None:
+        if picamera2 is not None:
             return self.camera.shutter_speed
         return self.shutter_speed
 
@@ -433,7 +441,7 @@ class CameraController(threading.Thread):
         Set picamera exposure to auto
         :return: none
         """
-        if picamera is not None:
+        if picamera2 is not None:
             self.camera.iso = 0
             self.camera.shutter_speed = 0
             self.camera.exposure_mode = 'auto'
