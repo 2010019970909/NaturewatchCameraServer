@@ -26,9 +26,9 @@ class FileSaver(Thread):
 
         self.config = config
 
-        # Scaledown factor for thumbnail images
-        self.thumbnail_factor = self.config["tn_width"] / \
-            self.config["img_width"]
+        # Scale down factor for thumbnail images
+        self.thumbnail_factor = (
+            self.config["tn_width"] / self.config["img_width"])
 
     def check_storage(self):
         """Check how much storage space is used.
@@ -39,6 +39,8 @@ class FileSaver(Thread):
         self.logger.debug(f'FileSaver: {percent} % of storage space used.')
         return percent
 
+    # TODO: merge save functions
+    # def save_file(self, image, timestamp):
     def save_image(self, image, timestamp):
         """Save image to disk
         :param image: numpy array image
@@ -74,7 +76,8 @@ class FileSaver(Thread):
         self.logger.debug(f'FileSaver: saving thumb "{filename}"')
 
         try:
-            if media_type in ["photo", "timelapse"]:
+            # TODO: downscaling should be done here.
+            if media_type in ("photo", "timelapse"):
                 # TODO: Build a proper downscaling routine for the thumbnails
                 # self.logger.debug(
                 #     'Scaling by a factor of {}'.format(self.thumbnail_factor))
