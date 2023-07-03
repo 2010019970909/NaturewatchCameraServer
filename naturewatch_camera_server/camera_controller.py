@@ -175,7 +175,8 @@ class CameraController(threading.Thread):
         :return: MD image or None if no image is available.
         """
         if self.image is not None:
-            return self.image.copy()
+            md_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+            return md_image.copy()
         return None
 
     # Get MD image in binary jpeg encoding format
@@ -183,8 +184,7 @@ class CameraController(threading.Thread):
         """Get MD image in binary jpeg encoding format.
         :return: MD image in binary jpeg encoding format
         """
-        image = cv2.cvtColor(self.get_md_image(), cv2.COLOR_BGR2RGB)
-        return cv2.imencode(".jpg", image)[1]
+        return cv2.imencode(".jpg", self.get_md_image())[1]
 
     def get_video_stream(self):
         """Get video stream.
