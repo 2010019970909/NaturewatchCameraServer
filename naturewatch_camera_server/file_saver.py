@@ -45,22 +45,22 @@ class FileSaver(Thread):
         :param timestamp: formatted timestamp string
         :return: filename
         """
-        if self.check_storage() < 99:
-            filename = f'{timestamp}.jpg'
-            self.logger.debug('FileSaver: saving file')
-
-            try:
-                path = os.path.join(self.config["photos_path"], filename)
-                cv2.imwrite(path, image)
-                self.logger.info(f"FileSaver: saved file to {path}")
-                return filename
-
-            except cv2.error as error:
-                self.logger.error('FileSaver: save_photo() error: ')
-                self.logger.exception(error)
-                return None
-        else:
+        if self.check_storage() >= 99:
             self.logger.error('FileSaver: not enough space to save image')
+            return None
+
+        filename = f'{timestamp}.jpg'
+        self.logger.debug('FileSaver: saving file')
+
+        try:
+            path = os.path.join(self.config["photos_path"], filename)
+            cv2.imwrite(path, image)
+            self.logger.info(f"FileSaver: saved file to {path}")
+            return filename
+
+        except cv2.error as error:
+            self.logger.error('FileSaver: save_image() error: ')
+            self.logger.exception(error)
             return None
 
     def save_thumb(self, image, timestamp, media_type):
@@ -90,7 +90,7 @@ class FileSaver(Thread):
             return filename
 
         except cv2.error as error:
-            self.logger.error('FileSaver: save_photo() error: ')
+            self.logger.error('FileSaver: save_thumb() error: ')
             self.logger.exception(error)
             return None
 
