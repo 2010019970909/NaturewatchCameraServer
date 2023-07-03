@@ -80,7 +80,6 @@ class CameraController(threading.Thread):
             self.initialise_webcam()
 
         self.image = None
-        self.hires_image = None
 
     # Main routine
     def run(self):
@@ -242,21 +241,15 @@ class CameraController(threading.Thread):
         """
         self.logger.debug("CameraController: hires image requested.")
         if picamera2 is not None:
-            # # "Decode" the image from the stream, preserving colour
-            # decoded_image = cv2.imdecode(np.fromstring(
-            #     stream.getvalue(), dtype=np.uint8), 1)
-
-            # if decoded_image is not None:
-            #     return decoded_image.copy()
-            # return None
-            # TODO
+            # Configure camera for hires image
             capture_config = self.camera.create_still_configuration()
 
+            # Get image from Pi camera
             image_array = self.camera.switch_mode_and_capture_array(
                 capture_config,
             )
 
-            # image_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
+            image_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
 
             if image_array is not None:
                 return image_array.copy()
@@ -447,7 +440,7 @@ class CameraController(threading.Thread):
         """
         if picamera2 is not None:
             print(f'{self.camera.controls}')
-            return 'off'
+            return "TODO get exposure mode"
         return self.exposure_mode
 
     def get_iso(self):
@@ -455,7 +448,8 @@ class CameraController(threading.Thread):
         :return: iso
         """
         if picamera2 is not None:
-            return self.camera.iso
+            # return self.camera.iso
+            return "TODO get iso"
         return self.iso
 
     def get_shutter_speed(self):
@@ -463,7 +457,7 @@ class CameraController(threading.Thread):
         :return: shutter speed
         """
         if picamera2 is not None:
-            return self.camera.shutter_speed
+            return "TODO get shutter speed"
         return self.shutter_speed
 
     def auto_exposure(self):
@@ -472,11 +466,14 @@ class CameraController(threading.Thread):
         :return: none
         """
         if picamera2 is not None:
-            self.camera.iso = 0
-            self.camera.shutter_speed = 0
-            self.camera.exposure_mode = 'auto'
-            self.camera.awb_mode = 'auto'
+            # TODO: picamera2 auto exposure
+            # self.camera.iso = 0
+            # self.camera.shutter_speed = 0
+            # self.camera.exposure_mode = 'auto'
+            # self.camera.awb_mode = 'auto'
+            pass
         else:
+            # Kind of useless
             self.iso = 'auto'
             self.shutter_speed = 0
             self.exposure_mode = 'auto'
