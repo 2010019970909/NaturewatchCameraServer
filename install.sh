@@ -37,9 +37,6 @@ apt-get install -y python3 python3-pip python3-dev python3-setuptools python3-wh
 apt-get install -y python3-picamera2 --no-install-recommends
 apt-get install -y git ffmpeg
 
-echo "Use legacy picamera library"
-raspi-config nonint do_legacy 0
-
 echo "Installing OpenCV"
 # Note: python is now python3 in current distro releases
 python ${DIR}/helpers/install_piwheels_dependencies.py opencv-python-headless
