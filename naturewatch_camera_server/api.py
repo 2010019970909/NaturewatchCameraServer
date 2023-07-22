@@ -120,7 +120,7 @@ def settings_handler():
             )
             current_app.change_detector.timelapse_active = settings[
                 "timelapse"]["active"]
-            current_app.change_detector.timelapse = settings[
+            current_app.change_detector.timelapse_interval = settings[
                 "timelapse"]["interval"]
 
         new_settings = construct_settings_object(
@@ -163,7 +163,7 @@ def construct_settings_object(camera_controller, change_detector):
         "sensitivity": sensitivity,
         "timelapse": {
             "active": current_app.change_detector.timelapse_active,
-            "interval": current_app.change_detector.timelapse,
+            "interval": current_app.change_detector.timelapse_interval,
         }
     }
     return settings

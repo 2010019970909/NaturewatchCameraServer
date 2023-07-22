@@ -1,6 +1,7 @@
 """Change detector module for the camera server."""
 import logging
 import time
+import os
 from datetime import datetime
 from threading import Thread
 
@@ -55,6 +56,9 @@ class ChangeDetector(Thread):
 
         self.timelapse_active = False
         self.timelapse_interval = self.config.get('timelapse_interval_s', 30)
+
+        self.record_video = False
+        self.last_movement_time = self.get_fake_time()
 
         self.logger.info("ChangeDetector: initialised")
 
@@ -189,78 +193,107 @@ class ChangeDetector(Thread):
         """
         time.sleep(0.02)
         # only check for motion while a session is active
-        if self.mode in ["photo", "video"]:
+
+        if self.record_video:
+
+            self.last_capture_time = self.get_fake_time()
+
+            delta = self.get_fake_time() - self.last_movement_time
+            if self.config.get('video_duration_after_motion', 5) <= delta:
+                self.record_video = False
+                self.camera_controller.camera_output.stop()
+                self.logger.info('ChangeDetector: video capture ended')
+
+        if self.mode in ("photo", "video"):
             # get an motion detection (md) image
             img = self.camera_controller.get_md_image()
 
-            # only proceed if there is an image
-            if img is not None:
-                if self.detect_change_contours(img) is True:
-                    # TODO: Maybe implement a function to notify
-                    # the user via the web interface
-                    self.logger.info(
-                        "ChangeDetector: detected motion. Starting capture..."
-                    )
-                    timestamp = self.get_formatted_time()
-                    if self.mode == "photo":
-                        # Capture high resolution image
-                        image = self.camera_controller.get_hires_image()
-
-                        # Save image and thumbnail
-                        self.file_saver.save_image(image, timestamp)
-                        self.file_saver.save_thumb(
-                            imutils.resize(
-                                image, width=self.config["md_width"]),
-                            timestamp,
-                            self.mode,
-                        )
-                        self.last_capture_time = self.get_fake_time()
-                        self.logger.info(
-                            "ChangeDetector: photo capture completed")
-
-                    elif self.mode == "video":
-                        # Save thumbnail
-                        self.file_saver.save_thumb(img, timestamp, self.mode)
-
-                        # Start video recording
-                        # TODO: wait until no motion is detected any more?
-                        self.camera_controller.wait_recording(
-                            self.config["video_duration_after_motion"])
-
-                        self.logger.info(
-                            "ChangeDetector: video capture completed")
-
-                        # Now when it's time to start recording the output,
-                        # including the previous x seconds:
-                        filename = f"{timestamp}.h264"
-                        # filename_mp4 = f"{timestamp}.mp4"
-                        import os
-                        input_video = os.path.join(
-                            self.config["videos_path"], filename)
-
-                        self.camera_controller.camera_output.fileoutput = filename = f"{timestamp}.h264"
-                        self.camera_controller.camera_output.start()
-                        time.sleep(5)
-                        self.camera_controller.camera_output.stop()
-                        # Save video ...
-                        # with self.camera_controller.get_video_stream().lock:
-                        #     self.file_saver.save_video(
-                        #         self.camera_controller.get_video_stream(),
-                        #         timestamp,
-                        #     )
-
-                        self.last_capture_time = self.get_fake_time()
-                        self.logger.debug("ChangeDetector: video timer reset")
-                    # else:
-                    #     # TODO: Add debug code that logs a line
-                    #     # every x seconds so we can see the ChangeDetector
-                    #     # is still alive:
-                    #     # self.logger.debug("ChangeDetector: idle")
-                    #     pass
-            else:
+            # No image received, return
+            if img is None:
                 self.logger.error("ChangeDetector: not receiving any images "
                                   "for motion detection!")
                 time.sleep(1)
+                return
+
+            # No motion detected, return
+            if self.detect_change_contours(img) is False:
+                return
+
+            print(self.mode, "motion detected")
+            self.last_movement_time = self.get_fake_time()
+            # TODO: Maybe implement a function to notify
+            # the user via the web interface
+            self.logger.info(
+                "ChangeDetector: detected motion. Starting capture..."
+            )
+            timestamp = self.get_formatted_time()
+
+            if self.mode == "photo":
+                # Capture high resolution image
+                image = self.camera_controller.get_hires_image()
+
+                # Save image and thumbnail
+                self.file_saver.save_image(image, timestamp)
+                self.file_saver.save_thumb(
+                    imutils.resize(
+                        image, width=self.config["md_width"]),
+                    timestamp,
+                    self.mode,
+                )
+                self.last_capture_time = self.get_fake_time()
+                self.logger.info(
+                    "ChangeDetector: photo capture completed")
+
+            elif self.mode == "video":
+                # Do not start a new video if one is already running
+                if self.record_video:
+                    return
+
+                self.record_video = True
+
+                # Video path
+                filename = f"{timestamp}.h264"
+                filename = os.path.join(
+                    self.config.get("videos_path", './'), filename)
+
+                # Set output file
+                self.camera_controller.camera_output.fileoutput = filename
+
+                # Start recording
+                self.camera_controller.camera_output.start()
+
+                # Save thumbnail
+                self.file_saver.save_thumb(img, timestamp, self.mode)
+
+                self.logger.info("ChangeDetector: video capture began")
+
+                # Now when it's time to start recording the output,
+                # including the previous x seconds:
+                # filename = f"{timestamp}.h264"
+                # # filename_mp4 = f"{timestamp}.mp4"
+                # import os
+                # input_video = os.path.join(
+                #     self.config["videos_path"], filename)
+
+                # self.camera_controller.camera_output.fileoutput = filename
+                # self.camera_controller.camera_output.start()
+                # time.sleep(5)
+                # self.camera_controller.camera_output.stop()
+                # Save video ...
+                # with self.camera_controller.get_video_stream().lock:
+                #     self.file_saver.save_video(
+                #         self.camera_controller.get_video_stream(),
+                #         timestamp,
+                #     )
+
+                # self.last_capture_time = self.get_fake_time()
+                # self.logger.debug("ChangeDetector: video timer reset")
+            # else:
+            #     # TODO: Add debug code that logs a line
+            #     # every x seconds so we can see the ChangeDetector
+            #     # is still alive:
+            #     # self.logger.debug("ChangeDetector: idle")
+            #     pass
 
         # TODO: implement periodic pictures
         elif self.mode == "timelapse":

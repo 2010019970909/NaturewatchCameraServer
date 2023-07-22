@@ -47,12 +47,14 @@ class CameraController(threading.Thread):
         self.md_width = self.config["md_width"]
         self.md_height = self.md_width * self.height // self.width
 
-        # For video
-        # self.picamera_video_stream = None
-        self.camera_output = picamera2.outputs.CircularOutput(
-            buffersize=self.config.get("circular_output_buffer_size", 300)
-        )
-        self.camera_encoder = picamera2.encoders.H264Encoder(10000000)
+        # For video, need to extract bitrate from config
+        if picamera2 is not None:
+            self.camera_encoder = picamera2.encoders.H264Encoder(
+                self.config.get("video_bitrate", 10000000))
+
+            self.camera_output = picamera2.outputs.CircularOutput(
+                buffersize=self.config.get("circular_output_buffer_size", 300),
+            )
 
         self.camera = None
         self.rotated_camera = False
@@ -82,6 +84,33 @@ class CameraController(threading.Thread):
         """Run camera controller.
         :return: None
         """
+
+        # time.sleep(15)
+
+        # def get_formatted_time():
+        #     """Get the formatted time.
+        #     :return: the formatted time
+        #     """
+        #     from datetime import datetime
+        #     current_time = datetime.utcfromtimestamp(time.time())
+        #     return current_time.strftime('%Y-%m-%d-%H-%M-%S')
+
+        # # Now when it's time to start recording the output,
+        # # including the previous x seconds:
+        # timestamp = get_formatted_time()
+        # filename = f"{timestamp}.h264"
+        # # filename_mp4 = f"{timestamp}.mp4"
+        # import os
+        # input_video = os.path.join(
+        #     self.config["videos_path"], filename)
+
+        # self.camera_output.fileoutput = input_video
+        # print(f"Start recording to {input_video}")
+        # self.camera_output.start()
+        # time.sleep(5)
+        # self.camera_output.stop()
+        # print("Done recording")
+
         while not self.is_stopped():
             try:
                 if picamera2 is not None:
@@ -184,12 +213,16 @@ class CameraController(threading.Thread):
         :return: None
         """
         if picamera2 is not None:
-            self.picamera_video_stream.clear()
-            self.camera.start_recording(
-                self.picamera_video_stream,
-                format='h264',
-                bitrate=self.video_bitrate,
-            )
+            # print("Begin CircularIO")
+            # Need to create config for circular buffer size (base on fps)
+
+            # print("bitrate", self.video_bitrate)
+            # self.picamera_video_stream.clear()
+            # self.camera.start_recording(
+            #     self.picamera_video_stream,
+            #     format='h264',
+            #     bitrate=self.video_bitrate,
+            # )
             self.logger.debug('CameraController: recording started')
 
     def stop_video_stream(self):
@@ -296,7 +329,7 @@ class CameraController(threading.Thread):
         )
 
         # Ensure the resolution are chosen optimally
-        config = self.camera.align_configuration(config)
+        self.camera.align_configuration(config)
 
         self.camera.configure(config)
         # self.camera.set_controls({"ExposureTime": 10000, "AnalogueGain": 1.0})
