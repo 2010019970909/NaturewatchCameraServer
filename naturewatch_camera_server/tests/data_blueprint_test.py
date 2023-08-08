@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Test the data blueprint."""
 import datetime
 import json
@@ -36,11 +37,13 @@ def test_client():
 
     # Take 2 photos and record their filenames
     for _ in range(2):
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         thumb = file_saver.save_thumb(
-            app.camera_controller.get_md_image(), timestamp, "photo")
+            app.camera_controller.get_md_image(), timestamp, "photo"
+        )
         filename = file_saver.save_image(
-            app.camera_controller.get_hires_image(), timestamp)
+            app.camera_controller.get_hires_image(), timestamp
+        )
         PHOTOS_LIST.append(filename)
         PHOTOS_THUMB_LIST.append(thumb)
         time.sleep(1)
@@ -48,14 +51,16 @@ def test_client():
     # Record videos and save their filenames.
     app.camera_controller.start_video_stream()
     for _ in range(2):
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         time.sleep(2)
         thumb = file_saver.save_thumb(
-            app.camera_controller.get_md_image(), timestamp, "video")
+            app.camera_controller.get_md_image(), timestamp, "video"
+        )
         app.camera_controller.wait_recording(2)
         with app.camera_controller.get_video_stream().lock:
             filename = file_saver.save_video(
-                app.camera_controller.get_video_stream(), timestamp)
+                app.camera_controller.get_video_stream(), timestamp
+            )
             VIDEOS_LIST.append(filename)
             VIDEOS_THUMB_LIST.append(thumb)
             time.sleep(1)
@@ -83,9 +88,9 @@ def test_photos(testing_client):
     WHEN '/data/photos' is requested (GET)
     THEN list of photos should be returned.
     """
-    response = testing_client.get('/data/photos')
+    response = testing_client.get("/data/photos")
     assert response.status_code == 200
-    response_list = json.loads(response.data.decode('utf8'))
+    response_list = json.loads(response.data.decode("utf8"))
     assert isinstance(response_list, list)
     for file in PHOTOS_LIST:
         assert file in response_list
@@ -97,7 +102,7 @@ def test_photo(testing_client):
     WHEN '/data/photo/<photo>' is requested (GET)
     THEN a single photo should be returned.
     """
-    response = testing_client.get('/data/photos/' + PHOTOS_LIST[0])
+    response = testing_client.get("/data/photos/" + PHOTOS_LIST[0])
     assert response.status_code == 200
 
 
@@ -107,9 +112,9 @@ def test_delete_photo(testing_client):
     WHEN '/data/photo/<photo>' is requested (GET)
     THEN a single photo should be returned.
     """
-    response = testing_client.delete('/data/photos/' + PHOTOS_LIST[0])
+    response = testing_client.delete("/data/photos/" + PHOTOS_LIST[0])
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert response_dict["SUCCESS"] == PHOTOS_LIST[0]
     del PHOTOS_LIST[0]
     del PHOTOS_THUMB_LIST[0]
@@ -121,9 +126,9 @@ def test_videos(testing_client):
     WHEN '/data/videos' is requested (GET)
     THEN list of videos should be returned.
     """
-    response = testing_client.get('/data/videos')
+    response = testing_client.get("/data/videos")
     assert response.status_code == 200
-    response_list = json.loads(response.data.decode('utf8'))
+    response_list = json.loads(response.data.decode("utf8"))
     assert isinstance(response_list, list)
     for file in VIDEOS_LIST:
         assert file in response_list
@@ -135,7 +140,7 @@ def test_video(testing_client):
     WHEN '/data/video/<video>' is requested (GET)
     THEN a single video should be returned.
     """
-    response = testing_client.get('/data/videos/' + VIDEOS_LIST[0])
+    response = testing_client.get("/data/videos/" + VIDEOS_LIST[0])
     assert response.status_code == 200
 
 
@@ -145,9 +150,9 @@ def test_delete_video(testing_client):
     WHEN '/data/video/<video>' is requested (GET)
     THEN a single video should be returned.
     """
-    response = testing_client.delete('/data/videos/' + VIDEOS_LIST[0])
+    response = testing_client.delete("/data/videos/" + VIDEOS_LIST[0])
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert response_dict["SUCCESS"] == VIDEOS_LIST[0]
     del VIDEOS_LIST[0]
     del VIDEOS_THUMB_LIST[0]

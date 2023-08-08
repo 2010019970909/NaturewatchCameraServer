@@ -1,9 +1,11 @@
 #!../venv/bin/python
+# -*- coding: utf-8 -*-
 """Initialise the naturewatch camera server."""
 import json
 import logging
 import os
-from logging.handlers import RotatingFileHandler
+
+# from logging.handlers import RotatingFileHandler
 from shutil import copyfile
 
 from flask import Flask
@@ -21,30 +23,32 @@ def extract_config(app):
     :param app: Flask app object
     :return: Flask app object, module path, camera log path
     """
-   # Retrieve module path
+    # Retrieve module path
     module_path = os.path.abspath(os.path.dirname(__file__))
     app.logger.info("Module path: %s", module_path)
 
     # Load configuration json
     # load central config file first
     config_path = os.path.join(module_path, "config.json")
-    with open(config_path, encoding='utf-8') as json_file:
+    with open(config_path, encoding="utf-8") as json_file:
         app.user_config = json.load(json_file)
 
     data_path = app.user_config["data_path"]
-    user_config_path = os.path.join(module_path, data_path, 'config.json')
-    camera_log_path = os.path.join(module_path, data_path, 'camera.log')
+    user_config_path = os.path.join(module_path, data_path, "config.json")
+    camera_log_path = os.path.join(module_path, data_path, "camera.log")
 
     # Check if a config file exists in data directory
     if os.path.isfile(user_config_path):
         # if yes, load that file, too
         app.logger.info("Using config file from data context")
-        with open(user_config_path, encoding='utf-8') as json_file:
+        with open(user_config_path, encoding="utf-8") as json_file:
             app.user_config = json.load(json_file)
     else:
         # if not, copy central config file to data directory
-        app.logger.warning("Config file does not exist within the data "
-                           "context, copying file")
+        app.logger.warning(
+            "Config file does not exist within the data "
+            "context, copying file"
+        )
         copyfile(config_path, user_config_path)
     return app, module_path, camera_log_path
 
@@ -55,10 +59,13 @@ def create_app():
     :return: Flask app object
     """
     # Setup blueprints, static and template folders
-    flask_app = Flask(__name__, static_folder="static/client/build",
-                      template_folder="static/client/build")
-    flask_app.register_blueprint(api, url_prefix='/api')
-    flask_app.register_blueprint(data, url_prefix='/data')
+    flask_app = Flask(
+        __name__,
+        static_folder="static/client/build",
+        template_folder="static/client/build",
+    )
+    flask_app.register_blueprint(api, url_prefix="/api")
+    flask_app.register_blueprint(data, url_prefix="/data")
     flask_app.register_blueprint(static_page)
 
     # Setup logger
@@ -84,11 +91,12 @@ def create_app():
 
     if not isinstance(numeric_loglevel, int):
         flask_app.logger.info(
-            'Invalid log level in config file: %s', log_level)
+            "Invalid log level in config file: %s", log_level
+        )
     else:
         file_handler.setLevel(numeric_loglevel)
 
-    logging_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    logging_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     formatter = logging.Formatter(logging_format)
     file_handler.setFormatter(formatter)
     flask_app.logger.addHandler(file_handler)
@@ -97,7 +105,8 @@ def create_app():
     # Find photos and videos paths
     # TODO: check what ?
     flask_app.user_config["photos_path"] = os.path.join(
-        module_path, flask_app.user_config["photos_path"])
+        module_path, flask_app.user_config["photos_path"]
+    )
     flask_app.logger.info(
         "Photos path: %s",
         flask_app.user_config["photos_path"],
@@ -105,21 +114,26 @@ def create_app():
     if os.path.isdir(flask_app.user_config["photos_path"]) is False:
         os.mkdir(flask_app.user_config["photos_path"])
         flask_app.logger.warning(
-            "Photos directory does not exist, creating path")
+            "Photos directory does not exist, creating path"
+        )
     flask_app.user_config["videos_path"] = os.path.join(
-        module_path, flask_app.user_config["videos_path"])
+        module_path, flask_app.user_config["videos_path"]
+    )
     if os.path.isdir(flask_app.user_config["videos_path"]) is False:
         os.mkdir(flask_app.user_config["videos_path"])
         flask_app.logger.warning(
-            "Videos directory does not exist, creating path")
+            "Videos directory does not exist, creating path"
+        )
 
     # Instantiate classes
     # Camera controller is only used in the ChangeDetector class
     flask_app.camera_controller = CameraController(
-        flask_app.logger, flask_app.user_config)
+        flask_app.logger, flask_app.user_config
+    )
     flask_app.logger.debug("Instantiating classes...")
     flask_app.change_detector = ChangeDetector(
-        flask_app.camera_controller, flask_app.user_config, flask_app.logger)
+        flask_app.camera_controller, flask_app.user_config, flask_app.logger
+    )
     flask_app.file_saver = FileSaver(flask_app.user_config, flask_app.logger)
 
     flask_app.logger.debug("Initialisation finished")
@@ -133,7 +147,7 @@ def create_error_app(error):
     """
     flask_app = Flask(__name__, static_folder="static/client/build")
 
-    @flask_app.route('/')
+    @flask_app.route("/")
     def index():
         return (
             "<html><body><h1>Unable to start NaturewatchCameraServer.</h1>"

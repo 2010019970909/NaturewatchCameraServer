@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """Change detector module for the camera server."""
 import logging
-import time
 import os
+import time
 from datetime import datetime
 from threading import Thread
 
@@ -55,7 +56,7 @@ class ChangeDetector(Thread):
         self.current_image = None
 
         self.timelapse_active = False
-        self.timelapse_interval = self.config.get('timelapse_interval_s', 30)
+        self.timelapse_interval = self.config.get("timelapse_interval_s", 30)
 
         self.record_video = False
         self.last_movement_time = self.get_fake_time()
@@ -100,11 +101,13 @@ class ChangeDetector(Thread):
         frame_delta = cv2.absdiff(gray, cv2.convertScaleAbs(self.avg))
 
         # threshold, dilate and find contours
-        thresh = cv2.threshold(frame_delta, self.config["delta_threshold"],
-                               255, cv2.THRESH_BINARY)[1]
+        thresh = cv2.threshold(
+            frame_delta, self.config["delta_threshold"], 255, cv2.THRESH_BINARY
+        )[1]
         thresh = cv2.dilate(thresh, None, iterations=2)
-        cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                   cv2.CHAIN_APPROX_SIMPLE)
+        cnts, _ = cv2.findContours(
+            thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
 
         # find largest contour
         largest_contour = self.get_largest_contour(cnts)
@@ -116,13 +119,15 @@ class ChangeDetector(Thread):
 
         # if the contour is too small or too big, return false
         if (
-            width < self.min_width or height < self.min_height or
-            width > self.max_width or height > self.max_height
+            width < self.min_width
+            or height < self.min_height
+            or width > self.max_width
+            or height > self.max_height
         ):
             return False
 
         time_interval = self.get_fake_time() - self.last_capture_time
-        if time_interval >= self.config['min_photo_interval_s']:
+        if time_interval >= self.config["min_photo_interval_s"]:
             return True
 
         return False
@@ -160,13 +165,14 @@ class ChangeDetector(Thread):
         if not isinstance(session_mode, str):
             raise TypeError("'session_mode' must be a string.")
 
-        if session_mode not in ('photo', 'video', 'timelapse'):
+        if session_mode not in ("photo", "video", "timelapse"):
             raise ValueError(
-                "'session_mode' must be `photo`, `video`, or `timelapse`.")
+                "'session_mode' must be `photo`, `video`, or `timelapse`."
+            )
 
         self.mode = session_mode
-        self.logger.info('ChangeDetector: starting %s capture', session_mode)
-        if session_mode == 'video':
+        self.logger.info("ChangeDetector: starting %s capture", session_mode)
+        if session_mode == "video":
             self.camera_controller.start_video_stream()
         self.session_start_time = self.get_fake_time()
 
@@ -174,7 +180,7 @@ class ChangeDetector(Thread):
         """Stop a session.
         :return: none
         """
-        self.logger.info('ChangeDetector: ending capture')
+        self.logger.info("ChangeDetector: ending capture")
 
         if self.mode == "video":
             self.camera_controller.stop_video_stream()
@@ -195,14 +201,13 @@ class ChangeDetector(Thread):
         # only check for motion while a session is active
 
         if self.record_video:
-
             self.last_capture_time = self.get_fake_time()
 
             delta = self.get_fake_time() - self.last_movement_time
-            if self.config.get('video_duration_after_motion', 5) <= delta:
+            if self.config.get("video_duration_after_motion", 5) <= delta:
                 self.record_video = False
                 self.camera_controller.camera_output.stop()
-                self.logger.info('ChangeDetector: video capture ended')
+                self.logger.info("ChangeDetector: video capture ended")
 
         if self.mode in ("photo", "video"):
             # get an motion detection (md) image
@@ -210,8 +215,10 @@ class ChangeDetector(Thread):
 
             # No image received, return
             if img is None:
-                self.logger.error("ChangeDetector: not receiving any images "
-                                  "for motion detection!")
+                self.logger.error(
+                    "ChangeDetector: not receiving any images "
+                    "for motion detection!"
+                )
                 time.sleep(1)
                 return
 
@@ -235,14 +242,12 @@ class ChangeDetector(Thread):
                 # Save image and thumbnail
                 self.file_saver.save_image(image, timestamp)
                 self.file_saver.save_thumb(
-                    imutils.resize(
-                        image, width=self.config["md_width"]),
+                    imutils.resize(image, width=self.config["md_width"]),
                     timestamp,
                     self.mode,
                 )
                 self.last_capture_time = self.get_fake_time()
-                self.logger.info(
-                    "ChangeDetector: photo capture completed")
+                self.logger.info("ChangeDetector: photo capture completed")
 
             elif self.mode == "video":
                 # Do not start a new video if one is already running
@@ -254,7 +259,8 @@ class ChangeDetector(Thread):
                 # Video path
                 filename = f"{timestamp}.h264"
                 filename = os.path.join(
-                    self.config.get("videos_path", './'), filename)
+                    self.config.get("videos_path", "./"), filename
+                )
 
                 # Set output file
                 self.camera_controller.camera_output.fileoutput = filename
@@ -302,7 +308,8 @@ class ChangeDetector(Thread):
             if time_interval >= self.timelapse_interval:
                 self.logger.info(
                     f"ChangeDetector: {self.timelapse_interval} s elapsed -> "
-                    "capturing...")
+                    "capturing..."
+                )
 
                 timestamp = self.get_formatted_time()
                 image = self.camera_controller.get_hires_image()
@@ -315,7 +322,8 @@ class ChangeDetector(Thread):
                 )
                 self.last_capture_time = self.get_fake_time()
                 self.logger.info(
-                    "ChangeDetector: timelapse photo capture completed")
+                    "ChangeDetector: timelapse photo capture completed"
+                )
 
     def get_fake_time(self):
         """Get the fake time.
@@ -330,4 +338,4 @@ class ChangeDetector(Thread):
         :return: the formatted time
         """
         current_time = datetime.utcfromtimestamp(self.get_fake_time())
-        return current_time.strftime('%Y-%m-%d-%H-%M-%S')
+        return current_time.strftime("%Y-%m-%d-%H-%M-%S")

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for the api blueprint"""
 import json
 import time
@@ -32,7 +33,7 @@ def test_root_page(testing_client):
     WHEN the '/' page is requested (GET)
     THEN check the response is valid
     """
-    response = testing_client.get('/')
+    response = testing_client.get("/")
     assert response.status_code == 200
     assert b"My Naturewatch Camera" in response.data
 
@@ -43,7 +44,7 @@ def test_jpg(testing_client):
     WHEN the '/api/frame' page is requested (GET)
     THEN check the response is valid
     """
-    response = testing_client.get('/api/frame')
+    response = testing_client.get("/api/frame")
     assert response.status_code == 200
     assert b"Content-Type: image/jpeg" in response.data
 
@@ -54,7 +55,7 @@ def test_mjpg(testing_client):
     WHEN the '/api/feed' page is requested (GET)
     THEN check the response is valid
     """
-    response = testing_client.get('/api/feed')
+    response = testing_client.get("/api/feed")
     assert response.status_code == 200
     # TODO test actual stream
 
@@ -65,15 +66,15 @@ def test_get_settings(testing_client):
     WHEN '/api/settings' is requested (GET)
     THEN check the settings object is valid
     """
-    response = testing_client.get('/api/settings')
+    response = testing_client.get("/api/settings")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "rotation" in response_dict
     assert "exposure" in response_dict
     assert "sensitivity" in response_dict
     assert "rotation" in response_dict
     assert response_dict["sensitivity"] == "default"
-    assert response_dict["exposure"]["mode"] == 'auto'
+    assert response_dict["exposure"]["mode"] == "auto"
     assert response_dict["exposure"]["iso"] == 0
     assert response_dict["exposure"]["shutter_speed"] == 0
 
@@ -89,21 +90,22 @@ def test_post_settings(testing_client):
         "exposure": {
             "mode": "auto",
         },
-        "sensitivity": "less"
+        "sensitivity": "less",
     }
     headers = {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
     }
     response = testing_client.post(
-        '/api/settings', data=json.dumps(settings), headers=headers)
+        "/api/settings", data=json.dumps(settings), headers=headers
+    )
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "rotation" in response_dict
     assert "exposure" in response_dict
     assert "sensitivity" in response_dict
     assert response_dict["sensitivity"] == "less"
-    assert response_dict["exposure"]["mode"] == 'auto'
+    assert response_dict["exposure"]["mode"] == "auto"
     assert response_dict["exposure"]["iso"] == 0
     assert response_dict["exposure"]["shutter_speed"] == 0
     assert response_dict["rotation"] is True
@@ -115,9 +117,9 @@ def test_session_status(testing_client):
     WHEN '/api/session' is requested (GET)
     THEN the session status object should be returned
     """
-    response = testing_client.get('/api/session')
+    response = testing_client.get("/api/session")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "time_started" in response_dict
     assert response_dict["mode"] == "inactive"
 
@@ -129,15 +131,15 @@ def test_session_photo(testing_client):
     THEN photo session should start and new status object
     should be returned. Session should then be stopped.
     """
-    response = testing_client.post('/api/session/start/photo')
+    response = testing_client.post("/api/session/start/photo")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "time_started" in response_dict
     assert response_dict["mode"] == "photo"
     time.sleep(1)
-    response = testing_client.post('/api/session/stop')
+    response = testing_client.post("/api/session/stop")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "time_started" in response_dict
     assert response_dict["mode"] == "inactive"
 
@@ -149,15 +151,15 @@ def test_session_video(testing_client):
     THEN video session should start and new status object
     should be returned. Session should then be stopped.
     """
-    response = testing_client.post('/api/session/start/video')
+    response = testing_client.post("/api/session/start/video")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "time_started" in response_dict
     assert response_dict["mode"] == "video"
     time.sleep(1)
-    response = testing_client.post('/api/session/stop')
+    response = testing_client.post("/api/session/stop")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "time_started" in response_dict
     assert response_dict["mode"] == "inactive"
 
@@ -168,9 +170,9 @@ def test_incorrect_time(testing_client):
     WHEN '/api/time/<time_string>' is sent a bad time
     THEN system time should not be updated
     """
-    response = testing_client.post('/api/time/1234')
+    response = testing_client.post("/api/time/1234")
     assert response.status_code == 400
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "ERROR" in response_dict
     assert response_dict["ERROR"] == "1234"
 
@@ -181,8 +183,8 @@ def test_correct_time(testing_client):
     WHEN '/api/time/<time_string>' is sent a time from the client
     THEN system time should be updated.
     """
-    response = testing_client.post('/api/time/1580317005')
+    response = testing_client.post("/api/time/1580317005")
     assert response.status_code == 200
-    response_dict = json.loads(response.data.decode('utf8'))
+    response_dict = json.loads(response.data.decode("utf8"))
     assert "SUCCESS" in response_dict
     assert response_dict["SUCCESS"] == "1580317005"

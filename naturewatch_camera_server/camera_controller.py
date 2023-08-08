@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """Camera controller module."""
-import io
+# import io
 import json
 import logging
 import os
@@ -8,11 +9,13 @@ import time
 
 import cv2
 import imutils
-import numpy as np
+
+# import numpy as np
 
 try:
-    import picamera2
     import libcamera
+    import picamera2
+
     # import picamera.array
 except ImportError:
     # well, picamera2 should be compatible with
@@ -50,7 +53,8 @@ class CameraController(threading.Thread):
         # For video, need to extract bitrate from config
         if picamera2 is not None:
             self.camera_encoder = picamera2.encoders.H264Encoder(
-                self.config.get("video_bitrate", 10000000))
+                self.config.get("video_bitrate", 10000000)
+            )
 
             self.camera_output = picamera2.outputs.CircularOutput(
                 buffersize=self.config.get("circular_output_buffer_size", 300),
@@ -116,16 +120,18 @@ class CameraController(threading.Thread):
                 if picamera2 is not None:
                     try:
                         # Get image from Pi camera
-                        self.image = self.camera.capture_array('main')
+                        self.image = self.camera.capture_array("main")
 
                         if self.image is None:
                             self.logger.warning(
-                                "CameraController: got empty image.")
+                                "CameraController: got empty image."
+                            )
                         time.sleep(0.01)
 
                     except Exception as error:  # pylint: disable=broad-except
                         self.logger.error(
-                            "CameraController: picamera2 update error.")
+                            "CameraController: picamera2 update error."
+                        )
                         self.logger.exception(error)
                         self.initialise_picamera2()
                         time.sleep(0.02)
@@ -136,18 +142,20 @@ class CameraController(threading.Thread):
                         _, frame = self.capture.read()
                         if frame is None:
                             self.logger.warning(
-                                "CameraController: got empty webcam image.")
+                                "CameraController: got empty webcam image."
+                            )
                         else:
                             self.image = imutils.resize(
                                 frame,
                                 width=self.md_width,
-                                height=self.md_height
+                                height=self.md_height,
                             )
                         time.sleep(0.01)
 
                     except cv2.error as error:
                         self.logger.error(
-                            "CameraController: webcam update error.")
+                            "CameraController: webcam update error."
+                        )
                         self.logger.exception(error)
                         self.initialise_webcam()
                         time.sleep(0.02)
@@ -174,7 +182,7 @@ class CameraController(threading.Thread):
             # Close webcam
             self.capture.release()
 
-        self.logger.info('CameraController: cancelling ...')
+        self.logger.info("CameraController: cancelling ...")
 
     # Check if thread is stopped
     def is_stopped(self):
@@ -223,7 +231,7 @@ class CameraController(threading.Thread):
             #     format='h264',
             #     bitrate=self.video_bitrate,
             # )
-            self.logger.debug('CameraController: recording started')
+            self.logger.debug("CameraController: recording started")
 
     def stop_video_stream(self):
         """Stop video stream.
@@ -231,7 +239,7 @@ class CameraController(threading.Thread):
         """
         if picamera2 is not None:
             self.camera.stop_recording()
-            self.logger.debug('CameraController: recording stopped')
+            self.logger.debug("CameraController: recording stopped")
 
     def wait_recording(self, delay):
         """Wait recording.
@@ -278,7 +286,8 @@ class CameraController(threading.Thread):
         _, raw_image = self.capture.read()
         if raw_image is None:
             self.logger.error(
-                "CameraController: webcam returned empty hires image.")
+                "CameraController: webcam returned empty hires image."
+            )
             return None
         return raw_image.copy()
 
@@ -288,7 +297,7 @@ class CameraController(threading.Thread):
         """Initialise picamera.
         :return: None
         """
-        self.logger.debug('CameraController: initialising picamera...')
+        self.logger.debug("CameraController: initialising picamera...")
 
         # If there is already a running instance, close it
         if self.camera is not None:
@@ -321,21 +330,21 @@ class CameraController(threading.Thread):
         # print(self.camera.sensor_modes)
         config = self.camera.create_video_configuration(
             transform=camera_transform,
-            buffer_count=self.config.get('camera_buffer_count', 8),
-            queue=self.config.get('camera_queue', True),
-            encode=self.config.get('camera_encode', 'lores'),
-            lores=self.config.get('camera_lores', {"size": (1920, 1080)}),
-            main=self.config.get('camera_main', {"size": (2028, 1520)}),
+            buffer_count=self.config.get("camera_buffer_count", 8),
+            queue=self.config.get("camera_queue", True),
+            encode=self.config.get("camera_encode", "lores"),
+            lores=self.config.get("camera_lores", {"size": (1920, 1080)}),
+            main=self.config.get("camera_main", {"size": (2028, 1520)}),
         )
 
         # Ensure the resolution are chosen optimally
         self.camera.align_configuration(config)
 
         self.camera.configure(config)
-        # self.camera.set_controls({"ExposureTime": 10000, "AnalogueGain": 1.0})
+        # self.camera.set_controls(
+        #     {"ExposureTime": 10000, "AnalogueGain": 1.0})
 
-        self.camera.start_recording(
-            self.camera_encoder, self.camera_output)
+        self.camera.start_recording(self.camera_encoder, self.camera_output)
         # self.camera.start()
 
         # capture an image
@@ -349,7 +358,8 @@ class CameraController(threading.Thread):
         # )
 
         # self.logger.debug(
-        #     'CameraController: low resolution stream prepared with resolution'
+        #     'CameraController: '
+        #     'low resolution stream prepared with resolution'
         #     f': {self.md_width}×{self.md_height}.'
         # )
 
@@ -395,7 +405,8 @@ class CameraController(threading.Thread):
         self.rotated_camera = rotation
         module_path = os.path.abspath(os.path.dirname(__file__))
         user_config_path = os.path.join(
-            module_path, self.config["data_path"], 'config.json')
+            module_path, self.config["data_path"], "config.json"
+        )
 
         if self.rotated_camera is True:
             if picamera2 is not None:
@@ -422,23 +433,23 @@ class CameraController(threading.Thread):
             self.camera.iso = iso
             time.sleep(0.5)  # it takes more time to set up the ISO
             self.camera.shutter_speed = shutter_speed
-            self.camera.exposure_mode = 'off'
+            self.camera.exposure_mode = "off"
             gains = self.camera.awb_gains
-            self.camera.awb_mode = 'off'
+            self.camera.awb_mode = "off"
             # Restore stored gains
             self.camera.awb_gains = gains
         else:
             # Well, it serves no use
             self.iso = iso
             self.shutter_speed = shutter_speed
-            self.exposure_mode = 'off'
+            self.exposure_mode = "off"
 
     def get_exposure_mode(self):
         """Get exposure mode.
         :return: exposure mode
         """
         if picamera2 is not None:
-            print(f'{self.camera.controls}')
+            print(f"{self.camera.controls}")
             return "TODO get exposure mode"
         return self.exposure_mode
 
@@ -473,9 +484,9 @@ class CameraController(threading.Thread):
             pass
         else:
             # Kind of useless
-            self.iso = 'auto'
+            self.iso = "auto"
             self.shutter_speed = 0
-            self.exposure_mode = 'auto'
+            self.exposure_mode = "auto"
 
     @staticmethod
     def update_config(new_config, config_path):
@@ -485,7 +496,8 @@ class CameraController(threading.Thread):
         :return: new config
         """
         contents = json.dumps(
-            new_config, sort_keys=True, indent=4, separators=(',', ': '))
-        with open(config_path, 'w', encoding='utf-8') as config_file:
+            new_config, sort_keys=True, indent=4, separators=(",", ": ")
+        )
+        with open(config_path, "w", encoding="utf-8") as config_file:
             config_file.write(contents)
         return new_config

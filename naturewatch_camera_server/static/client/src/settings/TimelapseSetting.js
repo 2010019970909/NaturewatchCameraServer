@@ -8,7 +8,7 @@ class TimelapseSetting extends React.Component {
     renderIntervalText(seconds) {
 
         var it = "";
-        
+
         if (seconds >= 3600) {
 
             var h = Math.floor(seconds / 3600);

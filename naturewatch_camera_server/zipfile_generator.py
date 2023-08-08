@@ -1,18 +1,20 @@
+# -*- coding: utf-8 -*-
 """A Zipfile generator to write zip files in a stream."""
 import logging
 from io import RawIOBase
 from zipfile import ZipFile, ZipInfo
 
 
-class ZipfileGenerator():  # pylint: disable=locally-disabled, too-few-public-methods, line-too-long
+class ZipfileGenerator:  # pylint: disable=locally-disabled, too-few-public-methods, line-too-long # noqa: E501
     """A Zipfile generator to write zip files in a stream."""
+
     class UnseekableStream(RawIOBase):
         """A stream that can't be seeked."""
 
         def __init__(self):
             """Constructor."""
             super().__init__()
-            self._buffer = b''
+            self._buffer = b""
 
         def writable(self):
             """Return True if the stream supports writing.
@@ -24,8 +26,10 @@ class ZipfileGenerator():  # pylint: disable=locally-disabled, too-few-public-me
             :param b: bytes to write
             :return: number of bytes written
             """
-            if self.closed:  # pylint: disable=locally-disabled, using-constant-test, line-too-long
-                raise ValueError('Stream was closed!')
+            if (
+                self.closed
+            ):  # pylint: disable=locally-disabled, using-constant-test, line-too-long # noqa: E501
+                raise ValueError("Stream was closed!")
             self._buffer += b
             return len(b)
 
@@ -34,14 +38,16 @@ class ZipfileGenerator():  # pylint: disable=locally-disabled, too-few-public-me
             :return: the current buffer
             """
             chunk = self._buffer
-            self._buffer = b''
+            self._buffer = b""
             return chunk
 
     # Constructor
-    def __init__(self,
-                 paths: list,  # { 'filename':'', 'arcname':'' }
-                 chunk_size=0x8000,
-                 logger=logging.getLogger(__name__)):
+    def __init__(
+        self,
+        paths: list,  # { 'filename':'', 'arcname':'' }
+        chunk_size=0x8000,
+        logger=logging.getLogger(__name__),
+    ):
         """Constructor.
         :param paths: The list of paths to zip.
         :param chunk_size: The size of the chunks to yield.
@@ -60,14 +66,15 @@ class ZipfileGenerator():  # pylint: disable=locally-disabled, too-few-public-me
         """
         output = ZipfileGenerator.UnseekableStream()
 
-        with ZipFile(output, mode='w') as zipfile:
+        with ZipFile(output, mode="w") as zipfile:
             for path in self.paths:
                 try:
-                    if len(path['arcname']) == 0:
-                        path['arcname'] = path['filename']
+                    if len(path["arcname"]) == 0:
+                        path["arcname"] = path["filename"]
 
                     z_info = ZipInfo.from_file(
-                        path['filename'], path['arcname'])
+                        path["filename"], path["arcname"]
+                    )
 
                     # it's not worth the resources,
                     # achieves max 0.1% on JPEGs...
@@ -78,8 +85,10 @@ class ZipfileGenerator():  # pylint: disable=locally-disabled, too-few-public-me
                     # system time with the browser time?
                     # VS: Seems to be solved using the former technique.
 
-                    with (open(path['filename'], 'rb') as entry,
-                          zipfile.open(z_info, mode='w') as dest):
+                    with (
+                        open(path["filename"], "rb") as entry,
+                        zipfile.open(z_info, mode="w") as dest,
+                    ):
                         chunk = entry.read(self.chunk_size)
                         while chunk:
                             dest.write(chunk)
@@ -88,7 +97,7 @@ class ZipfileGenerator():  # pylint: disable=locally-disabled, too-few-public-me
                             chunk = entry.read(self.chunk_size)
 
                 except FileNotFoundError:
-                    self.logger.error('File not found: %s', path['filename'])
+                    self.logger.error("File not found: %s", path["filename"])
 
         # ZipFile was closed: get the final bytes
         yield output.get()

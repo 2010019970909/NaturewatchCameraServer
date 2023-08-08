@@ -1,6 +1,6 @@
 #!/bin/bash
 # chmod +x build_node_app.sh
-# Use this script to recompile 
+# Use this script to recompile
 
 pushd naturewatch_camera_server/static/client/
 echo "Remove previous build files."

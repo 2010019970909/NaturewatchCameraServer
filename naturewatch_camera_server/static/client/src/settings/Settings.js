@@ -18,7 +18,7 @@ class Settings extends React.Component {
         this.onTimelapseActiveChange = this.onTimelapseActiveChange.bind(this);
         this.onIntervalChange = this.onIntervalChange.bind(this);
         this.onIntervalChangeEnd = this.onIntervalChangeEnd.bind(this);
-        
+
 
         this.state = {
             isOpen: false,
@@ -220,7 +220,7 @@ class Settings extends React.Component {
 
         return res;
     }
-    
+
     render() {
         return (
             <div className="settings">

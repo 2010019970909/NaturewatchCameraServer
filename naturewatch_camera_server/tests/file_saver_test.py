@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for the FileSaver class."""
 import datetime
 import os
@@ -44,9 +45,10 @@ def test_image_save():
     WHEN an image is saved
     THEN the image should exist in the file system and should not be empty
     """
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     filename = FILE_SAVER.save_image(
-        APP.camera_controller.get_md_image(), timestamp)
+        APP.camera_controller.get_md_image(), timestamp
+    )
     assert os.path.isfile(APP.user_config["photos_path"] + filename)
     assert os.path.getsize(APP.user_config["photos_path"] + filename) != 0
     os.remove(APP.user_config["photos_path"] + filename)
